@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { RoundMetadata } from '../types';
 import { Plus, Trash2, Eye, Calendar } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 const APP_VERSION = '1.0.0';
 
@@ -17,6 +18,8 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
     onSelectRound,
     onDeleteRound,
 }) => {
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [roundToDelete, setRoundToDelete] = useState<{ id: string; date: Date } | null>(null);
     const formatDate = (date: Date) => {
         const d = new Date(date);
         return d.toLocaleDateString('es-ES', {
@@ -79,8 +82,8 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                                 Score: {round.totalScore || '-'}
                                             </span>
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${round.isComplete
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-yellow-100 text-yellow-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {round.isComplete ? 'Complete' : 'In Progress'}
                                             </span>
@@ -98,9 +101,8 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                     </button>
                                     <button
                                         onClick={() => {
-                                            if (window.confirm(`Delete round from ${formatDate(round.date)}?`)) {
-                                                onDeleteRound(round.id);
-                                            }
+                                            setRoundToDelete({ id: round.id, date: round.date });
+                                            setDeleteModalOpen(true);
                                         }}
                                         className="p-3 bg-red-50 text-red-600 rounded-xl font-bold shadow-sm active:bg-red-100 transition-colors border-2 border-red-100"
                                     >
@@ -112,6 +114,27 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Delete Round Confirmation Modal */}
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                title="Delete Round?"
+                message={roundToDelete ? `Are you sure you want to delete the round from ${formatDate(roundToDelete.date)}? This action cannot be undone.` : ''}
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmButtonClass="bg-red-600 text-white hover:bg-red-700 active:bg-red-800"
+                onConfirm={() => {
+                    if (roundToDelete) {
+                        onDeleteRound(roundToDelete.id);
+                    }
+                    setDeleteModalOpen(false);
+                    setRoundToDelete(null);
+                }}
+                onCancel={() => {
+                    setDeleteModalOpen(false);
+                    setRoundToDelete(null);
+                }}
+            />
         </div>
     );
 };

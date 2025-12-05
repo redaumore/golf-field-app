@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 const APP_VERSION = '1.0.0';
 
@@ -29,6 +30,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     isFirst,
     isLast,
 }) => {
+    const [showFinishModal, setShowFinishModal] = useState(false);
     const totalScore = score.approachShots + score.putts;
     const scoreDiff = totalScore - hole.par;
 
@@ -60,11 +62,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => {
-                            if (window.confirm('Finish this round? You can view it later in your rounds history.')) {
-                                onFinishRound();
-                            }
-                        }}
+                        onClick={() => setShowFinishModal(true)}
                         className="p-2 bg-green-50 text-green-700 border-2 border-green-200 rounded-lg shadow-sm active:bg-green-100"
                         title="Finish Round"
                     >
@@ -165,6 +163,21 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     v{APP_VERSION}
                 </span>
             </div>
+
+            {/* Finish Round Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showFinishModal}
+                title="Finish Round?"
+                message="Are you sure you want to finish this round? You can view it later in your rounds history."
+                confirmText="Finish Round"
+                cancelText="Continue Playing"
+                confirmButtonClass="bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
+                onConfirm={() => {
+                    setShowFinishModal(false);
+                    onFinishRound();
+                }}
+                onCancel={() => setShowFinishModal(false)}
+            />
         </div>
     );
 };
