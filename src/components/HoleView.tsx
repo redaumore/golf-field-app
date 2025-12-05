@@ -16,6 +16,7 @@ interface HoleViewProps {
     onFinishRound: () => void;
     isFirst: boolean;
     isLast: boolean;
+    isReadOnly?: boolean;
 }
 
 export const HoleView: React.FC<HoleViewProps> = ({
@@ -29,6 +30,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onFinishRound,
     isFirst,
     isLast,
+    isReadOnly = false,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const totalScore = score.approachShots + score.putts;
@@ -38,7 +40,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
         if (totalScore === 0) return 'text-gray-400';
         if (scoreDiff < 0) return 'text-red-600';
         if (scoreDiff === 0) return 'text-blue-600';
-        return 'text-black';
+        return 'theme-text-primary text-black';
     };
 
     return (
@@ -62,13 +64,15 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <ThemeToggle />
-                    <button
-                        onClick={() => setShowFinishModal(true)}
-                        className="p-2 theme-accent-green rounded-lg shadow-sm border-2"
-                        title="Finish Round"
-                    >
-                        <CheckCircle size={20} />
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            onClick={() => setShowFinishModal(true)}
+                            className="p-2 theme-accent-green rounded-lg shadow-sm border-2"
+                            title="Finish Round"
+                        >
+                            <CheckCircle size={20} />
+                        </button>
+                    )}
                     <button
                         onClick={onShowScorecard}
                         className="p-3 theme-btn-primary rounded-lg shadow-sm"
@@ -90,7 +94,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 </div>
 
                 {/* Controls */}
-                <div className="grid grid-cols-1 gap-6">
+                <div className={`grid grid-cols-1 gap-6 ${isReadOnly ? 'opacity-80' : ''}`}>
 
                     {/* Approach Section */}
                     <div className="theme-card-approach rounded-2xl p-4 border-2">
@@ -98,15 +102,16 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('approach', -1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold"
-                                disabled={score.approachShots <= 0}
+                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                disabled={isReadOnly || score.approachShots <= 0}
                             >
                                 -
                             </button>
                             <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
                             <button
                                 onClick={() => onUpdateScore('approach', 1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                disabled={isReadOnly}
                             >
                                 +
                             </button>
@@ -119,21 +124,21 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('putt', -1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold"
-                                disabled={score.putts <= 0}
+                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                disabled={isReadOnly || score.putts <= 0}
                             >
                                 -
                             </button>
                             <span className="text-5xl font-black theme-text-putt w-20 text-center">{score.putts}</span>
                             <button
                                 onClick={() => onUpdateScore('putt', 1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                disabled={isReadOnly}
                             >
                                 +
                             </button>
                         </div>
                     </div>
-
                 </div>
             </div>
 

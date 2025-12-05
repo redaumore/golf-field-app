@@ -1,3 +1,3 @@
 // Centralized version constant
 // This is the single source of truth for the app version
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.4.1';

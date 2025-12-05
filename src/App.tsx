@@ -195,6 +195,10 @@ function App() {
     ? rounds.find(r => r.id === currentRoundId)
     : null;
 
+  const isCurrentRoundComplete = currentRound
+    ? (currentRound.isFinished || Object.keys(currentRound.scores).length === COURSE_DATA.length)
+    : false;
+
   const currentHole = COURSE_DATA[currentHoleIndex];
   const currentScore = currentRound?.scores[currentHole.number] || {
     holeNumber: currentHole.number,
@@ -223,12 +227,13 @@ function App() {
           onFinishRound={handleFinishRound}
           isFirst={currentHoleIndex === 0}
           isLast={currentHoleIndex === COURSE_DATA.length - 1}
+          isReadOnly={isCurrentRoundComplete}
         />
       ) : (
         <Scorecard
           course={COURSE_DATA}
           scores={currentRound?.scores || {}}
-          onBack={() => setView('play')}
+          onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
         />
       )}
     </div>
