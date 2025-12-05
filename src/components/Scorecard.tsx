@@ -2,7 +2,7 @@ import React from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ArrowLeft } from 'lucide-react';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 interface ScorecardProps {
     course: Hole[];

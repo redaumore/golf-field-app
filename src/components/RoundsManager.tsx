@@ -3,7 +3,7 @@ import type { RoundMetadata } from '../types';
 import { Plus, Trash2, Eye, Calendar } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 interface RoundsManagerProps {
     rounds: RoundMetadata[];
