@@ -11,4 +11,18 @@ export interface HoleScore {
   putts: number;
 }
 
-export type View = 'play' | 'scorecard';
+export interface Round {
+  id: string; // formato: dd-mm-yyyy
+  date: Date;
+  scores: Record<number, HoleScore>;
+  currentHoleIndex: number;
+}
+
+export interface RoundMetadata {
+  id: string;
+  date: Date;
+  totalScore: number;
+  isComplete: boolean;
+}
+
+export type View = 'rounds' | 'play' | 'scorecard';

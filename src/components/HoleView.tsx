@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Hole, HoleScore } from '../types';
-import { ChevronLeft, ChevronRight, List, MapPin, Flag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home } from 'lucide-react';
 
 const APP_VERSION = '1.0.0';
 
@@ -11,6 +11,7 @@ interface HoleViewProps {
     onNext: () => void;
     onPrev: () => void;
     onShowScorecard: () => void;
+    onBackToRounds: () => void;
     isFirst: boolean;
     isLast: boolean;
 }
@@ -22,6 +23,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onNext,
     onPrev,
     onShowScorecard,
+    onBackToRounds,
     isFirst,
     isLast,
 }) => {
@@ -39,11 +41,19 @@ export const HoleView: React.FC<HoleViewProps> = ({
         <div className="flex flex-col min-h-screen bg-white text-black">
             {/* Header */}
             <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-black">Hole {hole.number}</h1>
-                    <div className="flex items-center space-x-3 text-sm font-bold text-gray-600 mt-1">
-                        <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
-                        <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onBackToRounds}
+                        className="p-2 bg-white border-2 border-gray-300 rounded-lg shadow-sm active:bg-gray-100"
+                    >
+                        <Home size={20} />
+                    </button>
+                    <div className="flex flex-col">
+                        <h1 className="text-3xl font-black">Hole {hole.number}</h1>
+                        <div className="flex items-center space-x-3 text-sm font-bold text-gray-600 mt-1">
+                            <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
+                            <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
+                        </div>
                     </div>
                 </div>
                 <button

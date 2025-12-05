@@ -1,74 +1,201 @@
 import { useState, useEffect } from 'react';
 import { COURSE_DATA } from './data/course';
-import type { HoleScore, View } from './types';
+import type { View, Round, RoundMetadata } from './types';
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
+import { RoundsManager } from './components/RoundsManager';
+
+const STORAGE_KEY = 'golf-app-rounds';
 
 function App() {
+  const [view, setView] = useState<View>('rounds');
+  const [rounds, setRounds] = useState<Round[]>([]);
+  const [currentRoundId, setCurrentRoundId] = useState<string | null>(null);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
-  const [view, setView] = useState<View>('play');
-  const [scores, setScores] = useState<Record<number, HoleScore>>({});
 
-  // Load from local storage on mount
+  // Load rounds from localStorage on mount
   useEffect(() => {
-    const savedScores = localStorage.getItem('golf-app-scores');
-    if (savedScores) {
+    const savedRounds = localStorage.getItem(STORAGE_KEY);
+    if (savedRounds) {
       try {
-        setScores(JSON.parse(savedScores));
+        const parsed = JSON.parse(savedRounds);
+        // Convert date strings back to Date objects
+        const roundsWithDates = parsed.map((r: Round) => ({
+          ...r,
+          date: new Date(r.date),
+        }));
+        setRounds(roundsWithDates);
       } catch (e) {
-        console.error('Failed to load scores', e);
+        console.error('Failed to load rounds', e);
       }
-    }
-
-    const savedHole = localStorage.getItem('golf-app-current-hole');
-    if (savedHole) {
-      setCurrentHoleIndex(parseInt(savedHole, 10));
     }
   }, []);
 
-  // Save to local storage on change
+  // Save rounds to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('golf-app-scores', JSON.stringify(scores));
-  }, [scores]);
+    if (rounds.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rounds));
+    }
+  }, [rounds]);
 
-  useEffect(() => {
-    localStorage.setItem('golf-app-current-hole', currentHoleIndex.toString());
-  }, [currentHoleIndex]);
+  // Generate round ID from current date (dd-mm-yyyy)
+  const generateRoundId = (): string => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
+  // Create a new round
+  const handleCreateRound = () => {
+    const newRoundId = generateRoundId();
+
+    // Check if a round with this ID already exists
+    const existingRound = rounds.find(r => r.id === newRoundId);
+    if (existingRound) {
+      // If exists, just select it
+      setCurrentRoundId(newRoundId);
+      setCurrentHoleIndex(existingRound.currentHoleIndex);
+      setView('play');
+      return;
+    }
+
+    const newRound: Round = {
+      id: newRoundId,
+      date: new Date(),
+      scores: {},
+      currentHoleIndex: 0,
+    };
+
+    setRounds(prev => [...prev, newRound]);
+    setCurrentRoundId(newRoundId);
+    setCurrentHoleIndex(0);
+    setView('play');
+  };
+
+  // Select an existing round
+  const handleSelectRound = (roundId: string) => {
+    const round = rounds.find(r => r.id === roundId);
+    if (round) {
+      setCurrentRoundId(roundId);
+      setCurrentHoleIndex(round.currentHoleIndex);
+      setView('play');
+    }
+  };
+
+  // Delete a round
+  const handleDeleteRound = (roundId: string) => {
+    setRounds(prev => prev.filter(r => r.id !== roundId));
+    if (currentRoundId === roundId) {
+      setCurrentRoundId(null);
+      setView('rounds');
+    }
+  };
+
+  // Update score for current round
   const handleUpdateScore = (type: 'approach' | 'putt', delta: number) => {
-    const holeNumber = COURSE_DATA[currentHoleIndex].number;
-    setScores(prev => {
-      const currentScore = prev[holeNumber] || { holeNumber, approachShots: 0, putts: 0 };
-      const newScore = { ...currentScore };
+    if (!currentRoundId) return;
 
+    const holeNumber = COURSE_DATA[currentHoleIndex].number;
+
+    setRounds(prev => prev.map(round => {
+      if (round.id !== currentRoundId) return round;
+
+      const currentScore = round.scores[holeNumber] || {
+        holeNumber,
+        approachShots: 0,
+        putts: 0
+      };
+
+      const newScore = { ...currentScore };
       if (type === 'approach') {
         newScore.approachShots = Math.max(0, newScore.approachShots + delta);
       } else {
         newScore.putts = Math.max(0, newScore.putts + delta);
       }
 
-      return { ...prev, [holeNumber]: newScore };
+      return {
+        ...round,
+        scores: { ...round.scores, [holeNumber]: newScore },
+      };
+    }));
+  };
+
+  // Navigate to next hole
+  const handleNext = () => {
+    if (currentHoleIndex < COURSE_DATA.length - 1) {
+      const newIndex = currentHoleIndex + 1;
+      setCurrentHoleIndex(newIndex);
+
+      // Update current hole index in the round
+      if (currentRoundId) {
+        setRounds(prev => prev.map(round =>
+          round.id === currentRoundId
+            ? { ...round, currentHoleIndex: newIndex }
+            : round
+        ));
+      }
+    }
+  };
+
+  // Navigate to previous hole
+  const handlePrev = () => {
+    if (currentHoleIndex > 0) {
+      const newIndex = currentHoleIndex - 1;
+      setCurrentHoleIndex(newIndex);
+
+      // Update current hole index in the round
+      if (currentRoundId) {
+        setRounds(prev => prev.map(round =>
+          round.id === currentRoundId
+            ? { ...round, currentHoleIndex: newIndex }
+            : round
+        ));
+      }
+    }
+  };
+
+  // Get rounds metadata for the manager
+  const getRoundsMetadata = (): RoundMetadata[] => {
+    return rounds.map(round => {
+      const totalScore = Object.values(round.scores).reduce(
+        (acc, score) => acc + score.approachShots + score.putts,
+        0
+      );
+      const isComplete = Object.keys(round.scores).length === COURSE_DATA.length;
+
+      return {
+        id: round.id,
+        date: round.date,
+        totalScore,
+        isComplete,
+      };
     });
   };
 
-  const handleNext = () => {
-    if (currentHoleIndex < COURSE_DATA.length - 1) {
-      setCurrentHoleIndex(prev => prev + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentHoleIndex > 0) {
-      setCurrentHoleIndex(prev => prev - 1);
-    }
-  };
+  // Get current round data
+  const currentRound = currentRoundId
+    ? rounds.find(r => r.id === currentRoundId)
+    : null;
 
   const currentHole = COURSE_DATA[currentHoleIndex];
-  const currentScore = scores[currentHole.number] || { holeNumber: currentHole.number, approachShots: 0, putts: 0 };
+  const currentScore = currentRound?.scores[currentHole.number] || {
+    holeNumber: currentHole.number,
+    approachShots: 0,
+    putts: 0
+  };
 
   return (
     <div className="min-h-screen w-full bg-white">
-      {view === 'play' ? (
+      {view === 'rounds' ? (
+        <RoundsManager
+          rounds={getRoundsMetadata()}
+          onCreateRound={handleCreateRound}
+          onSelectRound={handleSelectRound}
+          onDeleteRound={handleDeleteRound}
+        />
+      ) : view === 'play' ? (
         <HoleView
           hole={currentHole}
           score={currentScore}
@@ -76,13 +203,14 @@ function App() {
           onNext={handleNext}
           onPrev={handlePrev}
           onShowScorecard={() => setView('scorecard')}
+          onBackToRounds={() => setView('rounds')}
           isFirst={currentHoleIndex === 0}
           isLast={currentHoleIndex === COURSE_DATA.length - 1}
         />
       ) : (
         <Scorecard
           course={COURSE_DATA}
-          scores={scores}
+          scores={currentRound?.scores || {}}
           onBack={() => setView('play')}
         />
       )}
