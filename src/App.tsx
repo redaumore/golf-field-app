@@ -66,6 +66,7 @@ function App() {
       date: new Date(),
       scores: {},
       currentHoleIndex: 0,
+      isFinished: false,
     };
 
     setRounds(prev => [...prev, newRound]);
@@ -80,7 +81,8 @@ function App() {
     if (round) {
       setCurrentRoundId(roundId);
       setCurrentHoleIndex(round.currentHoleIndex);
-      setView('play');
+      // Si la rueda está finalizada, ir directo al scorecard
+      setView(round.isFinished ? 'scorecard' : 'play');
     }
   };
 
@@ -91,6 +93,19 @@ function App() {
       setCurrentRoundId(null);
       setView('rounds');
     }
+  };
+
+  // Finish a round manually
+  const handleFinishRound = () => {
+    if (!currentRoundId) return;
+
+    setRounds(prev => prev.map(round =>
+      round.id === currentRoundId
+        ? { ...round, isFinished: true }
+        : round
+    ));
+
+    setView('rounds');
   };
 
   // Update score for current round
@@ -163,7 +178,8 @@ function App() {
         (acc, score) => acc + score.approachShots + score.putts,
         0
       );
-      const isComplete = Object.keys(round.scores).length === COURSE_DATA.length;
+      // Una rueda está completa si jugó los 18 hoyos O si la finalizó manualmente
+      const isComplete = round.isFinished || Object.keys(round.scores).length === COURSE_DATA.length;
 
       return {
         id: round.id,
@@ -204,6 +220,7 @@ function App() {
           onPrev={handlePrev}
           onShowScorecard={() => setView('scorecard')}
           onBackToRounds={() => setView('rounds')}
+          onFinishRound={handleFinishRound}
           isFirst={currentHoleIndex === 0}
           isLast={currentHoleIndex === COURSE_DATA.length - 1}
         />

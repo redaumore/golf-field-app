@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Hole, HoleScore } from '../types';
-import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle } from 'lucide-react';
 
 const APP_VERSION = '1.0.0';
 
@@ -12,6 +12,7 @@ interface HoleViewProps {
     onPrev: () => void;
     onShowScorecard: () => void;
     onBackToRounds: () => void;
+    onFinishRound: () => void;
     isFirst: boolean;
     isLast: boolean;
 }
@@ -24,6 +25,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onPrev,
     onShowScorecard,
     onBackToRounds,
+    onFinishRound,
     isFirst,
     isLast,
 }) => {
@@ -56,12 +58,25 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         </div>
                     </div>
                 </div>
-                <button
-                    onClick={onShowScorecard}
-                    className="p-3 bg-white border-2 border-black rounded-lg shadow-sm active:bg-gray-100"
-                >
-                    <List size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            if (window.confirm('Finish this round? You can view it later in your rounds history.')) {
+                                onFinishRound();
+                            }
+                        }}
+                        className="p-2 bg-green-50 text-green-700 border-2 border-green-200 rounded-lg shadow-sm active:bg-green-100"
+                        title="Finish Round"
+                    >
+                        <CheckCircle size={20} />
+                    </button>
+                    <button
+                        onClick={onShowScorecard}
+                        className="p-3 bg-white border-2 border-black rounded-lg shadow-sm active:bg-gray-100"
+                    >
+                        <List size={24} />
+                    </button>
+                </div>
             </div>
 
             {/* Main Content */}

@@ -16,6 +16,7 @@ export interface Round {
   date: Date;
   scores: Record<number, HoleScore>;
   currentHoleIndex: number;
+  isFinished: boolean; // Marca si el jugador finalizó manualmente la rueda
 }
 
 export interface RoundMetadata {
