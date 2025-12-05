@@ -67,7 +67,7 @@ function App() {
   const currentScore = scores[currentHole.number] || { holeNumber: currentHole.number, approachShots: 0, putts: 0 };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-white">
+    <div className="min-h-screen w-full bg-white">
       {view === 'play' ? (
         <HoleView
           hole={currentHole}

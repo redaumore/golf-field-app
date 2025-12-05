@@ -29,7 +29,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
     };
 
     return (
-        <div className="flex flex-col h-full bg-white text-black">
+        <div className="flex flex-col min-h-screen bg-white text-black">
             <div className="p-4 bg-gray-100 border-b border-gray-300 flex items-center sticky top-0 z-10 shadow-sm">
                 <button onClick={onBack} className="p-2 mr-4 bg-white border border-gray-300 rounded-full shadow-sm active:bg-gray-200">
                     <ArrowLeft size={24} />

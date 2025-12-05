@@ -34,7 +34,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full bg-white text-black">
+        <div className="flex flex-col min-h-screen bg-white text-black">
             {/* Header */}
             <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
                 <div className="flex flex-col">
@@ -53,7 +53,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col p-4 space-y-6 overflow-y-auto">
+            <div className="flex-1 flex flex-col p-4 space-y-6 pb-6">
 
                 {/* Total Score Display */}
                 <div className="flex flex-col items-center justify-center py-4">
@@ -112,7 +112,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Footer Navigation */}
-            <div className="p-4 bg-white border-t border-gray-200 grid grid-cols-2 gap-4">
+            <div className="p-4 bg-white border-t border-gray-200 grid grid-cols-2 gap-4 sticky bottom-0">
                 <button
                     onClick={onPrev}
                     disabled={isFirst}
