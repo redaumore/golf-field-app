@@ -49,16 +49,16 @@ function App() {
 
   // Create a new round
   const handleCreateRound = () => {
-    const newRoundId = generateRoundId();
+    const baseId = generateRoundId();
+    let newRoundId = baseId;
 
-    // Check if a round with this ID already exists
-    const existingRound = rounds.find(r => r.id === newRoundId);
-    if (existingRound) {
-      // If exists, just select it
-      setCurrentRoundId(newRoundId);
-      setCurrentHoleIndex(existingRound.currentHoleIndex);
-      setView('play');
-      return;
+    // Find all rounds created today (starting with baseId)
+    const roundsToday = rounds.filter(r => r.id === baseId || r.id.startsWith(`${baseId}-`));
+
+    if (roundsToday.length > 0) {
+      // If rounds exist, append count to make unique ID
+      // Example: 05-12-2025 -> 05-12-2025-1 -> 05-12-2025-2
+      newRoundId = `${baseId}-${roundsToday.length}`;
     }
 
     const newRound: Round = {
