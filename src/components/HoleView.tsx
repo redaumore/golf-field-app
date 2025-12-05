@@ -2,6 +2,8 @@ import React from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ChevronLeft, ChevronRight, List, MapPin, Flag } from 'lucide-react';
 
+const APP_VERSION = '1.0.0';
+
 interface HoleViewProps {
     hole: Hole;
     score: HoleScore;
@@ -112,7 +114,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Footer Navigation */}
-            <div className="p-4 bg-white border-t border-gray-200 grid grid-cols-2 gap-4 sticky bottom-0">
+            <div className="relative p-4 bg-white border-t border-gray-200 grid grid-cols-2 gap-4 sticky bottom-0">
                 <button
                     onClick={onPrev}
                     disabled={isFirst}
@@ -133,6 +135,10 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 >
                     Next <ChevronRight className="ml-2" />
                 </button>
+                {/* Version indicator */}
+                <span className="absolute bottom-1 left-2 text-[10px] text-gray-400 font-mono">
+                    v{APP_VERSION}
+                </span>
             </div>
         </div>
     );

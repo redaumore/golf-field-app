@@ -2,6 +2,8 @@ import React from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ArrowLeft } from 'lucide-react';
 
+const APP_VERSION = '1.0.0';
+
 interface ScorecardProps {
     course: Hole[];
     scores: Record<number, HoleScore>;
@@ -30,11 +32,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
 
     return (
         <div className="flex flex-col min-h-screen bg-white text-black">
-            <div className="p-4 bg-gray-100 border-b border-gray-300 flex items-center sticky top-0 z-10 shadow-sm">
+            <div className="relative p-4 bg-gray-100 border-b border-gray-300 flex items-center sticky top-0 z-10 shadow-sm">
                 <button onClick={onBack} className="p-2 mr-4 bg-white border border-gray-300 rounded-full shadow-sm active:bg-gray-200">
                     <ArrowLeft size={24} />
                 </button>
                 <h1 className="text-2xl font-bold">Scorecard</h1>
+                {/* Version indicator */}
+                <span className="absolute top-2 right-2 text-[10px] text-gray-400 font-mono">
+                    v{APP_VERSION}
+                </span>
             </div>
 
             <div className="flex-1 overflow-auto p-4">
