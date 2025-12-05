@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-
-const APP_VERSION = '1.1.0';
+import { APP_VERSION } from '../constants/version';
 
 interface HoleViewProps {
     hole: Hole;
