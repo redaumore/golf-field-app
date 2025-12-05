@@ -104,3 +104,78 @@ button {
   background-color: var(--bg-secondary);
   transform: scale(0.95);
 }
+
+/* Themed Component Classes */
+.theme-bg-primary {
+  background-color: var(--bg-primary);
+}
+
+.theme-bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.theme-bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+
+.theme-text-primary {
+  color: var(--text-primary);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.theme-border {
+  border-color: var(--border-primary);
+}
+
+.theme-border-secondary {
+  border-color: var(--border-secondary);
+}
+
+/* Themed Buttons */
+.theme-btn-primary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+}
+
+.theme-btn-primary:active {
+  background-color: var(--bg-secondary);
+}
+
+/* Themed Cards */
+.theme-card {
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+}
+
+/* Themed Accent Colors */
+.theme-accent-blue {
+  background-color: var(--accent-blue-light);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+.theme-accent-green {
+  background-color: var(--accent-green-light);
+  color: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.theme-accent-red {
+  background-color: var(--accent-red-light);
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
+.theme-accent-yellow {
+  background-color: var(--accent-yellow-light);
+  color: var(--accent-yellow);
+  border-color: var(--accent-yellow);
+}

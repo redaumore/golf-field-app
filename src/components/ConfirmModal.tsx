@@ -33,21 +33,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+            <div className="relative theme-bg-primary rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
                 {/* Close button */}
                 <button
                     onClick={onCancel}
-                    className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute top-4 right-4 p-1 theme-text-tertiary hover:theme-text-secondary transition-colors"
                 >
                     <X size={20} />
                 </button>
 
                 {/* Content */}
                 <div className="mb-6">
-                    <h2 className="text-2xl font-black text-gray-900 mb-3">
+                    <h2 className="text-2xl font-black theme-text-primary mb-3">
                         {title}
                     </h2>
-                    <p className="text-gray-600 leading-relaxed">
+                    <p className="theme-text-secondary leading-relaxed">
                         {message}
                     </p>
                 </div>
@@ -56,7 +56,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 <div className="flex gap-3">
                     <button
                         onClick={onCancel}
-                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                        className="flex-1 px-4 py-3 theme-bg-tertiary theme-text-primary font-bold rounded-xl hover:theme-bg-secondary active:theme-bg-secondary transition-colors"
                     >
                         {cancelText}
                     </button>

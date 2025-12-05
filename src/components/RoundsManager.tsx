@@ -34,18 +34,18 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
     );
 
     return (
-        <div className="flex flex-col min-h-screen bg-white text-black">
+        <div className="flex flex-col min-h-screen theme-bg-primary theme-text-primary">
             {/* Header */}
-            <div className="relative p-4 bg-gray-50 border-b border-gray-200">
+            <div className="relative p-4 theme-bg-secondary theme-border border-b">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-black">Golf Rounds</h1>
-                        <p className="text-sm text-gray-600 mt-1">Manage your golf game history</p>
+                        <p className="text-sm theme-text-secondary mt-1">Manage your golf game history</p>
                     </div>
                     <ThemeToggle />
                 </div>
                 {/* Version indicator */}
-                <span className="absolute top-2 right-2 text-[10px] text-gray-400 font-mono">
+                <span className="absolute top-2 right-2 text-[10px] theme-text-tertiary font-mono">
                     v{APP_VERSION}
                 </span>
             </div>

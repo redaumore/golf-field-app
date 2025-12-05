@@ -42,19 +42,19 @@ export const HoleView: React.FC<HoleViewProps> = ({
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-white text-black">
+        <div className="flex flex-col min-h-screen theme-bg-primary theme-text-primary">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 theme-bg-secondary theme-border border-b">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onBackToRounds}
-                        className="p-2 bg-white border-2 border-gray-300 rounded-lg shadow-sm active:bg-gray-100"
+                        className="p-2 theme-btn-primary rounded-lg shadow-sm"
                     >
                         <Home size={20} />
                     </button>
                     <div className="flex flex-col">
                         <h1 className="text-3xl font-black">Hole {hole.number}</h1>
-                        <div className="flex items-center space-x-3 text-sm font-bold text-gray-600 mt-1">
+                        <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
                         </div>
@@ -64,14 +64,14 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     <ThemeToggle />
                     <button
                         onClick={() => setShowFinishModal(true)}
-                        className="p-2 bg-green-50 text-green-700 border-2 border-green-200 rounded-lg shadow-sm active:bg-green-100"
+                        className="p-2 theme-accent-green rounded-lg shadow-sm border-2"
                         title="Finish Round"
                     >
                         <CheckCircle size={20} />
                     </button>
                     <button
                         onClick={onShowScorecard}
-                        className="p-3 bg-white border-2 border-black rounded-lg shadow-sm active:bg-gray-100"
+                        className="p-3 theme-btn-primary rounded-lg shadow-sm"
                     >
                         <List size={24} />
                     </button>
