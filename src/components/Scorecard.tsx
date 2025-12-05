@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ArrowLeft } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
 
 interface ScorecardProps {
@@ -31,11 +32,14 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
 
     return (
         <div className="flex flex-col min-h-screen bg-white text-black">
-            <div className="relative p-4 bg-gray-100 border-b border-gray-300 flex items-center sticky top-0 z-10 shadow-sm">
-                <button onClick={onBack} className="p-2 mr-4 bg-white border border-gray-300 rounded-full shadow-sm active:bg-gray-200">
-                    <ArrowLeft size={24} />
-                </button>
-                <h1 className="text-2xl font-bold">Scorecard</h1>
+            <div className="relative p-4 bg-gray-100 border-b border-gray-300 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+                <div className="flex items-center">
+                    <button onClick={onBack} className="p-2 mr-4 bg-white border border-gray-300 rounded-full shadow-sm active:bg-gray-200">
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-2xl font-bold">Scorecard</h1>
+                </div>
+                <ThemeToggle />
                 {/* Version indicator */}
                 <span className="absolute top-2 right-2 text-[10px] text-gray-400 font-mono">
                     v{APP_VERSION}

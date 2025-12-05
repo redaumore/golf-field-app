@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
 
 interface HoleViewProps {
@@ -60,6 +61,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <ThemeToggle />
                     <button
                         onClick={() => setShowFinishModal(true)}
                         className="p-2 bg-green-50 text-green-700 border-2 border-green-200 rounded-lg shadow-sm active:bg-green-100"

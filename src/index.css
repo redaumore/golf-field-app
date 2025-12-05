@@ -47,3 +47,60 @@ button {
 .animate-scale-in {
   animation: scale-in 0.2s ease-out;
 }
+
+/* Theme Variables */
+:root[data-theme="modern"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #000000;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --accent-blue: #2563eb;
+  --accent-blue-light: #dbeafe;
+  --accent-green: #16a34a;
+  --accent-green-light: #dcfce7;
+  --accent-red: #dc2626;
+  --accent-red-light: #fee2e2;
+  --accent-yellow: #ca8a04;
+  --accent-yellow-light: #fef9c3;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="high-contrast"] {
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --border-primary: #404040;
+  --border-secondary: #606060;
+  --accent-blue: #60a5fa;
+  --accent-blue-light: #1e3a8a;
+  --accent-green: #4ade80;
+  --accent-green-light: #14532d;
+  --accent-red: #f87171;
+  --accent-red-light: #7f1d1d;
+  --accent-yellow: #fbbf24;
+  --accent-yellow-light: #78350f;
+  --shadow: rgba(255, 255, 255, 0.2);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  padding: 0.5rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: all 0.2s;
+}
+
+.theme-toggle-btn:active {
+  background-color: var(--bg-secondary);
+  transform: scale(0.95);
+}

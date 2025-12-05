@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { RoundMetadata } from '../types';
 import { Plus, Trash2, Eye, Calendar } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
 
 interface RoundsManagerProps {
@@ -36,8 +37,13 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
         <div className="flex flex-col min-h-screen bg-white text-black">
             {/* Header */}
             <div className="relative p-4 bg-gray-50 border-b border-gray-200">
-                <h1 className="text-3xl font-black">Golf Rounds</h1>
-                <p className="text-sm text-gray-600 mt-1">Manage your golf game history</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-black">Golf Rounds</h1>
+                        <p className="text-sm text-gray-600 mt-1">Manage your golf game history</p>
+                    </div>
+                    <ThemeToggle />
+                </div>
                 {/* Version indicator */}
                 <span className="absolute top-2 right-2 text-[10px] text-gray-400 font-mono">
                     v{APP_VERSION}
