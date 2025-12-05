@@ -55,7 +55,7 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                 {/* Create New Round Button */}
                 <button
                     onClick={onCreateRound}
-                    className="w-full flex items-center justify-center gap-3 p-6 bg-black text-white rounded-2xl font-bold text-lg shadow-md active:bg-gray-800 transition-colors"
+                    className="w-full flex items-center justify-center gap-3 p-6 theme-btn-primary rounded-2xl font-bold text-lg shadow-md active:scale-95 transition-transform"
                 >
                     <Plus size={24} />
                     Start New Round
@@ -63,32 +63,39 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
 
                 {/* Rounds List */}
                 {sortedRounds.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <div className="flex flex-col items-center justify-center py-12 theme-text-tertiary">
                         <Calendar size={64} className="mb-4 opacity-50" />
                         <p className="text-lg font-semibold">No rounds yet</p>
                         <p className="text-sm">Start your first round to begin tracking</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Your Rounds</h2>
+                        <h2 className="text-sm font-bold theme-text-secondary uppercase tracking-wide">Your Rounds</h2>
                         {sortedRounds.map((round) => (
                             <div
                                 key={round.id}
-                                className="bg-gray-50 rounded-2xl p-4 border-2 border-gray-100 shadow-sm"
+                                className="theme-card rounded-2xl p-4 shadow-sm"
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Calendar size={16} className="text-gray-500" />
-                                            <span className="text-lg font-black">{formatDate(round.date)}</span>
+                                            <Calendar size={16} className="theme-text-secondary" />
+                                            <span className="text-lg font-black theme-text-primary">
+                                                {formatDate(round.date)}
+                                                {round.id.split('-').length > 3 && (
+                                                    <span className="theme-text-tertiary ml-1 text-base font-normal">
+                                                        #{round.id.split('-')[3]}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm">
-                                            <span className="font-bold text-blue-600">
-                                                Score: {round.totalScore || '-'}
+                                            <span className="font-bold theme-text-secondary">
+                                                Score: <span className="theme-text-primary">{round.totalScore || '-'}</span>
                                             </span>
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${round.isComplete
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-yellow-100 text-yellow-700'
+                                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                                : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                                                 }`}>
                                                 {round.isComplete ? 'Complete' : 'In Progress'}
                                             </span>
@@ -99,7 +106,7 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => onSelectRound(round.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-sm active:bg-blue-700 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 p-3 theme-accent-blue rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-transform"
                                     >
                                         <Eye size={18} />
                                         {round.isComplete ? 'View' : 'Continue'}
@@ -109,7 +116,7 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                             setRoundToDelete({ id: round.id, date: round.date });
                                             setDeleteModalOpen(true);
                                         }}
-                                        className="p-3 bg-red-50 text-red-600 rounded-xl font-bold shadow-sm active:bg-red-100 transition-colors border-2 border-red-100"
+                                        className="p-3 theme-accent-red rounded-xl font-bold shadow-sm active:scale-95 transition-transform border-2"
                                     >
                                         <Trash2 size={18} />
                                     </button>

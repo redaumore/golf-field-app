@@ -86,27 +86,27 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     <div className={`text-6xl font-black ${getScoreColor()}`}>
                         {totalScore === 0 ? '-' : totalScore}
                     </div>
-                    <div className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2">Total Strokes</div>
+                    <div className="text-sm font-bold theme-text-secondary uppercase tracking-widest mt-2">Total Strokes</div>
                 </div>
 
                 {/* Controls */}
                 <div className="grid grid-cols-1 gap-6">
 
                     {/* Approach Section */}
-                    <div className="bg-blue-50 rounded-2xl p-4 border-2 border-blue-100">
-                        <div className="text-center mb-4 font-bold text-blue-900 uppercase tracking-wide">Approach</div>
+                    <div className="theme-card-approach rounded-2xl p-4 border-2">
+                        <div className="text-center mb-4 font-bold theme-text-approach uppercase tracking-wide">Approach</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('approach', -1)}
-                                className="w-16 h-16 flex items-center justify-center bg-white border-2 border-blue-200 rounded-full shadow-sm active:scale-95 transition-transform text-blue-900 text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold"
                                 disabled={score.approachShots <= 0}
                             >
                                 -
                             </button>
-                            <span className="text-5xl font-black text-blue-900 w-20 text-center">{score.approachShots}</span>
+                            <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
                             <button
                                 onClick={() => onUpdateScore('approach', 1)}
-                                className="w-16 h-16 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
                             >
                                 +
                             </button>
@@ -114,20 +114,20 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     </div>
 
                     {/* Putting Section */}
-                    <div className="bg-green-50 rounded-2xl p-4 border-2 border-green-100">
-                        <div className="text-center mb-4 font-bold text-green-900 uppercase tracking-wide">Putting (Green)</div>
+                    <div className="theme-card-putt rounded-2xl p-4 border-2">
+                        <div className="text-center mb-4 font-bold theme-text-putt uppercase tracking-wide">Putting (Green)</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('putt', -1)}
-                                className="w-16 h-16 flex items-center justify-center bg-white border-2 border-green-200 rounded-full shadow-sm active:scale-95 transition-transform text-green-900 text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold"
                                 disabled={score.putts <= 0}
                             >
                                 -
                             </button>
-                            <span className="text-5xl font-black text-green-900 w-20 text-center">{score.putts}</span>
+                            <span className="text-5xl font-black theme-text-putt w-20 text-center">{score.putts}</span>
                             <button
                                 onClick={() => onUpdateScore('putt', 1)}
-                                className="w-16 h-16 flex items-center justify-center bg-green-600 text-white rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
+                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold"
                             >
                                 +
                             </button>
@@ -138,13 +138,13 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Footer Navigation */}
-            <div className="relative p-4 bg-white border-t border-gray-200 grid grid-cols-2 gap-4 sticky bottom-0">
+            <div className="relative p-4 theme-nav border-t sticky bottom-0 grid grid-cols-2 gap-4">
                 <button
                     onClick={onPrev}
                     disabled={isFirst}
-                    className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors ${isFirst
-                        ? 'bg-gray-100 text-gray-300'
-                        : 'bg-gray-100 text-black active:bg-gray-200'
+                    className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors border-2 ${isFirst
+                        ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
+                        : 'theme-bg-secondary theme-text-primary theme-border active:brightness-90'
                         }`}
                 >
                     <ChevronLeft className="mr-2" /> Prev
@@ -152,9 +152,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 <button
                     onClick={onNext}
                     disabled={isLast}
-                    className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors ${isLast
-                        ? 'bg-gray-100 text-gray-300'
-                        : 'bg-black text-white active:bg-gray-800'
+                    className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors border-2 ${isLast
+                        ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
+                        : 'theme-bg-primary theme-text-primary theme-border active:brightness-90'
                         }`}
                 >
                     Next <ChevronRight className="ml-2" />

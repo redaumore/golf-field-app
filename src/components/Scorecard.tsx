@@ -21,13 +21,13 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
     };
 
     const getScoreColor = (par: number, score: number) => {
-        if (score === 0) return 'text-gray-500';
+        if (score === 0) return 'theme-text-tertiary';
         const diff = score - par;
-        if (diff <= -2) return 'text-gold-600 font-bold'; // Eagle or better
-        if (diff === -1) return 'text-red-600 font-bold'; // Birdie
-        if (diff === 0) return 'text-blue-600 font-bold'; // Par
-        if (diff === 1) return 'text-black'; // Bogey
-        return 'text-black'; // Double Bogey+
+        if (diff <= -2) return 'theme-text-accent-yellow font-bold'; // Eagle or better
+        if (diff === -1) return 'theme-text-accent-red font-bold'; // Birdie
+        if (diff === 0) return 'theme-text-accent-blue font-bold'; // Par
+        if (diff === 1) return 'theme-text-primary'; // Bogey
+        return 'theme-text-primary'; // Double Bogey+
     };
 
     return (
@@ -47,20 +47,20 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
             </div>
 
             <div className="flex-1 overflow-auto p-4">
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                    <div className="text-sm text-gray-600 uppercase tracking-wide font-semibold">Total Score</div>
-                    <div className="text-4xl font-black text-blue-900">{totalShots}</div>
-                    <div className="text-sm text-gray-500 mt-1">Par {totalPar}</div>
+                <div className="mb-6 p-4 theme-card-approach rounded-lg text-center border-2">
+                    <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total Score</div>
+                    <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
+                    <div className="text-sm theme-text-approach mt-1 opacity-75">Par {totalPar}</div>
                 </div>
 
                 <div className="space-y-2">
                     {course.map((hole) => {
                         const { total, display } = getScoreForHole(hole.number);
                         return (
-                            <div key={hole.number} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <div key={hole.number} className="flex items-center justify-between p-3 theme-card rounded-lg shadow-sm">
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-gray-500 font-bold uppercase">Hole {hole.number}</span>
-                                    <span className="text-xs text-gray-400">Par {hole.par} • {hole.distance}y</span>
+                                    <span className="text-xs theme-text-secondary font-bold uppercase">Hole {hole.number}</span>
+                                    <span className="text-xs theme-text-tertiary">Par {hole.par} • {hole.distance}y</span>
                                 </div>
                                 <div className={`text-2xl font-mono ${getScoreColor(hole.par, total)}`}>
                                     {display}

@@ -54,39 +54,58 @@ button {
   --bg-secondary: #f9fafb;
   --bg-tertiary: #f3f4f6;
   --text-primary: #000000;
-  --text-secondary: #6b7280;
+  --text-secondary: #4b5563;
   --text-tertiary: #9ca3af;
   --border-primary: #e5e7eb;
   --border-secondary: #d1d5db;
-  --accent-blue: #2563eb;
-  --accent-blue-light: #dbeafe;
-  --accent-green: #16a34a;
-  --accent-green-light: #dcfce7;
-  --accent-red: #dc2626;
-  --accent-red-light: #fee2e2;
-  --accent-yellow: #ca8a04;
-  --accent-yellow-light: #fef9c3;
-  --shadow: rgba(0, 0, 0, 0.1);
+  --card-bg-approach: #eff6ff;
+  --card-border-approach: #dbeafe;
+  --text-approach: #1e3a8a;
+  --btn-approach-bg: #ffffff;
+  --btn-approach-border: #bfdbfe;
+  --card-bg-putt: #f0fdf4;
+  --card-border-putt: #dcfce7;
+  --text-putt: #14532d;
+  --btn-putt-bg: #ffffff;
+  --btn-putt-border: #bbf7d0;
+  --nav-bg: #ffffff;
+  --shadow: rgba(0, 0, 0, 0.05);
 }
 
 :root[data-theme="high-contrast"] {
-  --bg-primary: #000000;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2d2d2d;
+  /* Dark Theme Premium Palette */
+  --bg-primary: #121212;
+  /* Gris muy oscuro, mejor que negro puro */
+  --bg-secondary: #1e1e1e;
+  /* Superficie elevada */
+  --bg-tertiary: #2a2a2a;
   --text-primary: #ffffff;
-  --text-secondary: #e0e0e0;
-  --text-tertiary: #b0b0b0;
-  --border-primary: #404040;
-  --border-secondary: #606060;
-  --accent-blue: #60a5fa;
-  --accent-blue-light: #1e3a8a;
-  --accent-green: #4ade80;
-  --accent-green-light: #14532d;
-  --accent-red: #f87171;
-  --accent-red-light: #7f1d1d;
-  --accent-yellow: #fbbf24;
-  --accent-yellow-light: #78350f;
-  --shadow: rgba(255, 255, 255, 0.2);
+  --text-secondary: #a1a1aa;
+  /* Gris suave */
+  --text-tertiary: #71717a;
+  --border-primary: #333333;
+  --border-secondary: #444444;
+
+  /* Approach Card (Dark Mode) */
+  --card-bg-approach: #172554;
+  /* Azul oscuro profundo */
+  --card-border-approach: #1e3a8a;
+  --text-approach: #dbeafe;
+  /* Azul muy claro */
+  --btn-approach-bg: #1e3a8a;
+  --btn-approach-border: #2563eb;
+
+  /* Putt Card (Dark Mode) */
+  --card-bg-putt: #052e16;
+  /* Verde oscuro profundo */
+  --card-border-putt: #14532d;
+  --text-putt: #dcfce7;
+  /* Verde muy claro */
+  --btn-putt-bg: #14532d;
+  --btn-putt-border: #16a34a;
+
+  --nav-bg: #1e1e1e;
+  --shadow: rgba(0, 0, 0, 0.4);
 }
 
 /* Theme Toggle Button */
@@ -178,4 +197,57 @@ button {
   background-color: var(--accent-yellow-light);
   color: var(--accent-yellow);
   border-color: var(--accent-yellow);
+}
+
+/* Themed Cards Specifics */
+.theme-card-approach {
+  background-color: var(--card-bg-approach);
+  border-color: var(--card-border-approach);
+}
+
+.theme-text-approach {
+  color: var(--text-approach);
+}
+
+.theme-btn-approach {
+  background-color: var(--btn-approach-bg);
+  color: var(--text-approach);
+  border: 2px solid var(--btn-approach-border);
+}
+
+.theme-card-putt {
+  background-color: var(--card-bg-putt);
+  border-color: var(--card-border-putt);
+}
+
+.theme-text-putt {
+  color: var(--text-putt);
+}
+
+.theme-btn-putt {
+  background-color: var(--btn-putt-bg);
+  color: var(--text-putt);
+  border: 2px solid var(--btn-putt-border);
+}
+
+.theme-nav {
+  background-color: var(--nav-bg);
+  border-top-color: var(--border-primary);
+}
+
+/* Themed Text Accents */
+.theme-text-accent-blue {
+  color: var(--accent-blue);
+}
+
+.theme-text-accent-red {
+  color: var(--accent-red);
+}
+
+.theme-text-accent-green {
+  color: var(--accent-green);
+}
+
+.theme-text-accent-yellow {
+  color: var(--accent-yellow);
 }
