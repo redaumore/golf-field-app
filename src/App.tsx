@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { COURSE_DATA } from './data/course';
-import type { View, Round, RoundMetadata } from './types';
+import type { View, Round, RoundMetadata, GolfClub } from './types';
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
@@ -109,7 +109,7 @@ function App() {
   };
 
   // Update score for current round
-  const handleUpdateScore = (type: 'approach' | 'putt', delta: number) => {
+  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub) => {
     if (!currentRoundId) return;
 
     const holeNumber = COURSE_DATA[currentHoleIndex].number;
@@ -120,12 +120,23 @@ function App() {
       const currentScore = round.scores[holeNumber] || {
         holeNumber,
         approachShots: 0,
-        putts: 0
+        putts: 0,
+        approachShotsDetails: []
       };
 
       const newScore = { ...currentScore };
       if (type === 'approach') {
         newScore.approachShots = Math.max(0, newScore.approachShots + delta);
+
+        // Handle club details
+        if (delta > 0 && club) {
+          newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), club];
+        } else if (delta < 0) {
+          // Remove last added club if reducing score
+          const details = [...(newScore.approachShotsDetails || [])];
+          details.pop();
+          newScore.approachShotsDetails = details;
+        }
       } else {
         newScore.putts = Math.max(0, newScore.putts + delta);
       }

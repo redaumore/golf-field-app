@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import type { Hole, HoleScore } from '../types';
+import { useState } from 'react';
+import type { Hole, HoleScore, GolfClub } from '../types';
 import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
-
 interface HoleViewProps {
     hole: Hole;
     score: HoleScore;
-    onUpdateScore: (type: 'approach' | 'putt', delta: number) => void;
+    onUpdateScore: (type: 'approach' | 'putt', delta: number, club?: GolfClub) => void;
     onNext: () => void;
     onPrev: () => void;
     onShowScorecard: () => void;
@@ -18,6 +17,8 @@ interface HoleViewProps {
     isLast: boolean;
     isReadOnly?: boolean;
 }
+
+const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd'];
 
 export const HoleView: React.FC<HoleViewProps> = ({
     hole,
@@ -33,6 +34,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
     isReadOnly = false,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
+    const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
+
     const totalScore = score.approachShots + score.putts;
     const scoreDiff = totalScore - hole.par;
 
@@ -41,6 +44,13 @@ export const HoleView: React.FC<HoleViewProps> = ({
         if (scoreDiff < 0) return 'text-red-600';
         if (scoreDiff === 0) return 'text-blue-600';
         return 'theme-text-primary text-black';
+    };
+
+    const handleAddApproach = () => {
+        if (selectedClub) {
+            onUpdateScore('approach', 1, selectedClub);
+            setSelectedClub(null); // Reset selection after adding
+        }
     };
 
     return (
@@ -97,8 +107,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 <div className={`grid grid-cols-1 gap-6 ${isReadOnly ? 'opacity-80' : ''}`}>
 
                     {/* Approach Section */}
-                    <div className="theme-card-approach rounded-2xl p-4 border-2">
-                        <div className="text-center mb-4 font-bold theme-text-approach uppercase tracking-wide">Approach</div>
+                    <div className="theme-card-approach rounded-2xl p-4 border-2 space-y-4">
+                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide">Approach</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('approach', -1)}
@@ -109,13 +119,37 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             </button>
                             <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
                             <button
-                                onClick={() => onUpdateScore('approach', 1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
-                                disabled={isReadOnly}
+                                onClick={handleAddApproach}
+                                className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
+                                    ? 'theme-btn-approach border-current'
+                                    : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                    }`}
+                                disabled={isReadOnly || !selectedClub}
                             >
                                 +
                             </button>
                         </div>
+
+                        {/* Club Selection Grid */}
+                        {!isReadOnly && (
+                            <div className="space-y-2 pt-2 border-t theme-border-approach opacity-90">
+                                <p className="text-xs text-center theme-text-approach uppercase font-bold tracking-wider mb-2">Select Club</p>
+                                <div className="grid grid-cols-5 gap-2">
+                                    {CLUBS.map(club => (
+                                        <button
+                                            key={club}
+                                            onClick={() => setSelectedClub(club)}
+                                            className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 ${selectedClub === club
+                                                ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                                }`}
+                                        >
+                                            {club}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Putting Section */}
