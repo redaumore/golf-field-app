@@ -117,27 +117,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <Home size={20} />
                     </button>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl font-black">Hole {hole.number}</h1>
-                            {/* Tee Location Button */}
-                            {!isReadOnly && (
-                                <button
-                                    onClick={handleSetTee}
-                                    disabled={!!score.teeLocation || isSettingTee}
-                                    className={`p-1.5 rounded-full transition-colors ${score.teeLocation
-                                            ? 'text-green-500 bg-green-100'
-                                            : 'text-gray-400 bg-gray-100 hover:text-blue-500 hover:bg-blue-50'
-                                        }`}
-                                    title={score.teeLocation ? "Tee location set" : "Set Tee location"}
-                                >
-                                    {isSettingTee ? (
-                                        <Loader2 size={16} className="animate-spin" />
-                                    ) : (
-                                        <MapPin size={16} className={score.teeLocation ? "fill-current" : ""} />
-                                    )}
-                                </button>
-                            )}
-                        </div>
+                        <h1 className="text-3xl font-black">Hole {hole.number}</h1>
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
@@ -168,18 +148,50 @@ export const HoleView: React.FC<HoleViewProps> = ({
             <div className="flex-1 flex flex-col p-4 space-y-6 pb-6">
 
                 {/* Total Score Display */}
-                <div className="flex flex-col items-center justify-center py-4">
+                <div className="flex flex-col items-center justify-center pt-2 pb-4">
                     <div className={`text-6xl font-black ${getScoreColor()}`}>
                         {totalScore === 0 ? '-' : totalScore}
                     </div>
-                    <div className="text-sm font-bold theme-text-secondary uppercase tracking-widest mt-2">Total Strokes</div>
+                    <div className="text-sm font-bold theme-text-secondary uppercase tracking-widest mt-1 mb-4">Total Strokes</div>
+
+                    {/* Prominent Tee Location Button */}
+                    {!isReadOnly && (
+                        <button
+                            onClick={handleSetTee}
+                            disabled={isSettingTee}
+                            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold shadow-md transition-all transform active:scale-95 ${score.teeLocation
+                                    ? 'bg-green-100 text-green-700 border-2 border-green-200'
+                                    : 'bg-blue-600 text-white shadow-blue-200 shadow-lg animate-pulse'
+                                }`}
+                        >
+                            {isSettingTee ? (
+                                <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    <span>Locating...</span>
+                                </>
+                            ) : score.teeLocation ? (
+                                <>
+                                    <MapPin size={18} className="fill-current" />
+                                    <span>Tee Location Set</span>
+                                    <span className="text-xs opacity-75 font-mono ml-1">
+                                        ({score.teeLocation.latitude.toFixed(4)})
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <MapPin size={20} />
+                                    <span>START HOLE (SET TEE)</span>
+                                </>
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {/* Controls */}
                 <div className={`grid grid-cols-1 gap-6 ${isReadOnly ? 'opacity-80' : ''}`}>
 
                     {/* Approach Section */}
-                    <div className="theme-card-approach rounded-2xl p-4 border-2 space-y-4">
+                    <div className={`theme-card-approach rounded-2xl p-4 border-2 space-y-4 transition-opacity ${!score.teeLocation && !isReadOnly ? 'opacity-50 pointer-events-none' : ''}`}>
                         <div className="text-center font-bold theme-text-approach uppercase tracking-wide">Approach</div>
                         <div className="flex items-center justify-between">
                             <button
@@ -193,10 +205,10 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             <button
                                 onClick={handleAddApproach}
                                 className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
-                                    ? 'theme-btn-approach border-current'
-                                    : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                        ? 'theme-btn-approach border-current'
+                                        : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
                                     }`}
-                                disabled={isReadOnly || !selectedClub || isLocating}
+                                disabled={isReadOnly || !selectedClub || isLocating || !score.teeLocation}
                             >
                                 {isLocating ? <Loader2 className="animate-spin" size={24} /> : '+'}
                             </button>
@@ -212,14 +224,19 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
                                             className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 ${selectedClub === club
-                                                ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                                    ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
                                         >
                                             {club}
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                        )}
+                        {!score.teeLocation && !isReadOnly && (
+                            <div className="text-center text-xs text-red-500 font-bold uppercase tracking-wide mt-2">
+                                Set Tee Location first
                             </div>
                         )}
                     </div>
