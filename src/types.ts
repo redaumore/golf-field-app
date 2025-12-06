@@ -17,6 +17,7 @@ export interface ShotDetail {
   club: GolfClub;
   location?: GeoLocation;
   timestamp: number;
+  distance?: number; // Distance achieved in yards
 }
 
 export interface HoleScore {
@@ -24,6 +25,7 @@ export interface HoleScore {
   approachShots: number;
   putts: number;
   approachShotsDetails?: ShotDetail[];
+  teeLocation?: GeoLocation;
 }
 
 export interface Round {

@@ -14,6 +14,7 @@ interface HoleViewProps {
     onShowScorecard: () => void;
     onBackToRounds: () => void;
     onFinishRound: () => void;
+    onSetTeeLocation: (location: GeoLocation) => void;
     isFirst: boolean;
     isLast: boolean;
     isReadOnly?: boolean;
@@ -30,6 +31,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onShowScorecard,
     onBackToRounds,
     onFinishRound,
+    onSetTeeLocation,
     isFirst,
     isLast,
     isReadOnly = false,
@@ -37,6 +39,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
     const [isLocating, setIsLocating] = useState(false);
+    const [isSettingTee, setIsSettingTee] = useState(false);
 
     const totalScore = score.approachShots + score.putts;
     const scoreDiff = totalScore - hole.par;
@@ -46,6 +49,26 @@ export const HoleView: React.FC<HoleViewProps> = ({
         if (scoreDiff < 0) return 'text-red-600';
         if (scoreDiff === 0) return 'text-blue-600';
         return 'theme-text-primary text-black';
+    };
+
+    const handleSetTee = () => {
+        if (!navigator.geolocation) return;
+        setIsSettingTee(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                onSetTeeLocation({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                });
+                setIsSettingTee(false);
+            },
+            (error) => {
+                console.warn("Tee location error:", error);
+                setIsSettingTee(false);
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
     };
 
     const handleAddApproach = () => {
@@ -94,7 +117,27 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <Home size={20} />
                     </button>
                     <div className="flex flex-col">
-                        <h1 className="text-3xl font-black">Hole {hole.number}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-3xl font-black">Hole {hole.number}</h1>
+                            {/* Tee Location Button */}
+                            {!isReadOnly && (
+                                <button
+                                    onClick={handleSetTee}
+                                    disabled={!!score.teeLocation || isSettingTee}
+                                    className={`p-1.5 rounded-full transition-colors ${score.teeLocation
+                                            ? 'text-green-500 bg-green-100'
+                                            : 'text-gray-400 bg-gray-100 hover:text-blue-500 hover:bg-blue-50'
+                                        }`}
+                                    title={score.teeLocation ? "Tee location set" : "Set Tee location"}
+                                >
+                                    {isSettingTee ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        <MapPin size={16} className={score.teeLocation ? "fill-current" : ""} />
+                                    )}
+                                </button>
+                            )}
+                        </div>
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
@@ -150,8 +193,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             <button
                                 onClick={handleAddApproach}
                                 className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
-                                        ? 'theme-btn-approach border-current'
-                                        : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                    ? 'theme-btn-approach border-current'
+                                    : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
                                     }`}
                                 disabled={isReadOnly || !selectedClub || isLocating}
                             >
@@ -169,8 +212,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
                                             className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 ${selectedClub === club
-                                                    ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                                ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
                                         >
                                             {club}
@@ -211,8 +254,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     onClick={onPrev}
                     disabled={isFirst}
                     className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors border-2 ${isFirst
-                            ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
-                            : 'theme-bg-secondary theme-text-primary theme-border active:brightness-90'
+                        ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
+                        : 'theme-bg-secondary theme-text-primary theme-border active:brightness-90'
                         }`}
                 >
                     <ChevronLeft className="mr-2" /> Prev
@@ -221,8 +264,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     onClick={onNext}
                     disabled={isLast}
                     className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors border-2 ${isLast
-                            ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
-                            : 'theme-bg-primary theme-text-primary theme-border active:brightness-90'
+                        ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
+                        : 'theme-bg-primary theme-text-primary theme-border active:brightness-90'
                         }`}
                 >
                     Next <ChevronRight className="ml-2" />

@@ -108,6 +108,47 @@ function App() {
     setView('rounds');
   };
 
+  // Calculate distance in yards between two coordinates
+  const calculateDistance = (loc1: GeoLocation, loc2: GeoLocation): number => {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = loc1.latitude * Math.PI / 180;
+    const φ2 = loc2.latitude * Math.PI / 180;
+    const Δφ = (loc2.latitude - loc1.latitude) * Math.PI / 180;
+    const Δλ = (loc2.longitude - loc1.longitude) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const d = R * c; // in meters
+    return Math.round(d * 1.09361); // return yards
+  }
+
+  const handleSetTeeLocation = (location: GeoLocation) => {
+    if (!currentRoundId) return;
+    const holeNumber = COURSE_DATA[currentHoleIndex].number;
+
+    setRounds(prev => prev.map(round => {
+      if (round.id !== currentRoundId) return round;
+
+      const currentScore = round.scores[holeNumber] || {
+        holeNumber,
+        approachShots: 0,
+        putts: 0,
+        approachShotsDetails: []
+      };
+
+      return {
+        ...round,
+        scores: {
+          ...round.scores,
+          [holeNumber]: { ...currentScore, teeLocation: location }
+        }
+      };
+    }));
+  }
+
   // Update score for current round
   const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation) => {
     if (!currentRoundId) return;
@@ -130,10 +171,31 @@ function App() {
 
         // Handle club details
         if (delta > 0 && club) {
+          let distance: number | undefined;
+
+          // Calculate distance if we have current location and a previous point (tee or last shot)
+          if (location) {
+            const previousShots = newScore.approachShotsDetails || [];
+            let previousLocation = newScore.teeLocation; // Default to Tee
+
+            // If there are previous shots with location, use the last one
+            for (let i = previousShots.length - 1; i >= 0; i--) {
+              if (previousShots[i].location) {
+                previousLocation = previousShots[i].location;
+                break;
+              }
+            }
+
+            if (previousLocation) {
+              distance = calculateDistance(previousLocation, location);
+            }
+          }
+
           const shotDetail: ShotDetail = {
             club,
             timestamp: Date.now(),
-            location
+            location,
+            distance
           };
           newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
         } else if (delta < 0) {
@@ -241,6 +303,7 @@ function App() {
           onShowScorecard={() => setView('scorecard')}
           onBackToRounds={() => setView('rounds')}
           onFinishRound={handleFinishRound}
+          onSetTeeLocation={handleSetTeeLocation}
           isFirst={currentHoleIndex === 0}
           isLast={currentHoleIndex === COURSE_DATA.length - 1}
           isReadOnly={isCurrentRoundComplete}
