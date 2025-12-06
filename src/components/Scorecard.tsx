@@ -87,7 +87,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
                                             {score.approachShotsDetails && score.approachShotsDetails.length > 0 && (
                                                 <div className="mt-1 text-[11px] theme-text-tertiary truncate">
                                                     <span className="font-semibold opacity-75">Clubs: </span>
-                                                    {score.approachShotsDetails.join(', ')}
+                                                    {score.approachShotsDetails.map(d => d.club).join(', ')}
                                                 </div>
                                             )}
                                         </>

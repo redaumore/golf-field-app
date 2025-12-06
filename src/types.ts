@@ -7,11 +7,23 @@ export interface Hole {
 
 export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | 'Pw' | 'Sd';
 
+export interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+}
+
+export interface ShotDetail {
+  club: GolfClub;
+  location?: GeoLocation;
+  timestamp: number;
+}
+
 export interface HoleScore {
   holeNumber: number;
   approachShots: number;
   putts: number;
-  approachShotsDetails?: GolfClub[];
+  approachShotsDetails?: ShotDetail[];
 }
 
 export interface Round {

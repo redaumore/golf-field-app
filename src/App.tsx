@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { COURSE_DATA } from './data/course';
-import type { View, Round, RoundMetadata, GolfClub } from './types';
+import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail } from './types';
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
@@ -109,7 +109,7 @@ function App() {
   };
 
   // Update score for current round
-  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub) => {
+  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation) => {
     if (!currentRoundId) return;
 
     const holeNumber = COURSE_DATA[currentHoleIndex].number;
@@ -130,7 +130,12 @@ function App() {
 
         // Handle club details
         if (delta > 0 && club) {
-          newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), club];
+          const shotDetail: ShotDetail = {
+            club,
+            timestamp: Date.now(),
+            location
+          };
+          newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
         } else if (delta < 0) {
           // Remove last added club if reducing score
           const details = [...(newScore.approachShotsDetails || [])];
