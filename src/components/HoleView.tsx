@@ -106,9 +106,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
     };
 
     return (
-        <div className="flex flex-col min-h-screen theme-bg-primary theme-text-primary">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 theme-bg-secondary theme-border border-b">
+        <div className="flex flex-col h-screen w-full theme-bg-primary theme-text-primary fixed inset-0">
+            {/* Header - Fixed at top */}
+            <div className="flex items-center justify-between p-4 theme-bg-secondary theme-border border-b shrink-0 z-10 shadow-sm">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onBackToRounds}
@@ -144,8 +144,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col p-4 space-y-6 pb-6">
+            {/* Main Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
 
                 {/* Total Score Display */}
                 <div className="flex flex-col items-center justify-center pt-2 pb-4">
@@ -160,8 +160,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             onClick={handleSetTee}
                             disabled={isSettingTee}
                             className={`flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold shadow-md transition-all transform active:scale-95 ${score.teeLocation
-                                    ? 'bg-green-100 text-green-700 border-2 border-green-200'
-                                    : 'bg-blue-600 text-white shadow-blue-200 shadow-lg animate-pulse'
+                                ? 'bg-green-100 text-green-700 border-2 border-green-200'
+                                : 'bg-blue-600 text-white shadow-blue-200 shadow-lg animate-pulse'
                                 }`}
                         >
                             {isSettingTee ? (
@@ -205,8 +205,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             <button
                                 onClick={handleAddApproach}
                                 className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
-                                        ? 'theme-btn-approach border-current'
-                                        : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                    ? 'theme-btn-approach border-current'
+                                    : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
                                     }`}
                                 disabled={isReadOnly || !selectedClub || isLocating || !score.teeLocation}
                             >
@@ -224,8 +224,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
                                             className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 ${selectedClub === club
-                                                    ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                                ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
                                         >
                                             {club}
