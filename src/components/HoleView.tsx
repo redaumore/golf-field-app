@@ -20,7 +20,7 @@ interface HoleViewProps {
     isReadOnly?: boolean;
 }
 
-const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', 'LostBall'];
+const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
 
 export const HoleView: React.FC<HoleViewProps> = ({
     hole,
@@ -231,12 +231,12 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
                                             className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
-                                                    ? club === 'LostBall'
-                                                        ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-2 ring-red-200 scale-105'
-                                                        : 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
-                                                    : club === 'LostBall'
-                                                        ? 'bg-red-50 text-red-400 border-red-100 hover:border-red-300'
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                                ? club === 'LostBall'
+                                                    ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-2 ring-red-200 scale-105'
+                                                    : 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                : club === 'LostBall'
+                                                    ? 'bg-red-50 text-red-400 border-red-100 hover:border-red-300'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
                                             title={club === 'LostBall' ? "Lost Ball (Penalty)" : club}
                                         >
