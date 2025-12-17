@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Hole, HoleScore, GolfClub, GeoLocation } from '../types';
-import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle, Loader2, XCircle } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
@@ -20,7 +20,7 @@ interface HoleViewProps {
     isReadOnly?: boolean;
 }
 
-const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd'];
+const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', 'LostBall'];
 
 export const HoleView: React.FC<HoleViewProps> = ({
     hole,
@@ -73,6 +73,13 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
     const handleAddApproach = () => {
         if (!selectedClub) return;
+
+        // Special handling for Lost Ball: No geolocation needed
+        if (selectedClub === 'LostBall') {
+            onUpdateScore('approach', 1, selectedClub);
+            setSelectedClub(null);
+            return;
+        }
 
         setIsLocating(true);
 
@@ -223,12 +230,17 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                         <button
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
-                                            className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 ${selectedClub === club
-                                                ? 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
-                                                : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
+                                            className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
+                                                    ? club === 'LostBall'
+                                                        ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-2 ring-red-200 scale-105'
+                                                        : 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                    : club === 'LostBall'
+                                                        ? 'bg-red-50 text-red-400 border-red-100 hover:border-red-300'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
+                                            title={club === 'LostBall' ? "Lost Ball (Penalty)" : club}
                                         >
-                                            {club}
+                                            {club === 'LostBall' ? <XCircle size={16} /> : club}
                                         </button>
                                     ))}
                                 </div>

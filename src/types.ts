@@ -5,7 +5,7 @@ export interface Hole {
   handicap?: number;
 }
 
-export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | 'Pw' | 'Sd';
+export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | 'Pw' | 'Sd' | 'LostBall';
 
 export interface GeoLocation {
   latitude: number;
