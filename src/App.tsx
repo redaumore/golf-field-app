@@ -4,6 +4,7 @@ import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail } fr
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
+import { saveRoundToGoogleSheets } from './services/googleSheetsService';
 
 const STORAGE_KEY = 'golf-app-rounds';
 
@@ -96,8 +97,21 @@ function App() {
   };
 
   // Finish a round manually
-  const handleFinishRound = () => {
+  const handleFinishRound = async () => {
     if (!currentRoundId) return;
+
+    // Save to Google Sheets
+    const roundToSave = rounds.find(r => r.id === currentRoundId);
+    if (roundToSave) {
+      const finishedRound = { ...roundToSave, isFinished: true };
+      try {
+        await saveRoundToGoogleSheets(finishedRound);
+        alert('Ronda guardada correctamente en Google Sheets');
+      } catch (error) {
+        console.error('Error saving to Google Sheets:', error);
+        alert('Error al guardar en Google Sheets, pero se guardó localmente.');
+      }
+    }
 
     setRounds(prev => prev.map(round =>
       round.id === currentRoundId
