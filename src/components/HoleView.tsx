@@ -290,14 +290,17 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     <ChevronLeft className="mr-2" /> Prev
                 </button>
                 <button
-                    onClick={onNext}
-                    disabled={isLast}
+                    onClick={isLast ? () => setShowFinishModal(true) : onNext}
                     className={`flex items-center justify-center p-4 rounded-xl font-bold text-lg transition-colors border-2 ${isLast
-                        ? 'theme-bg-tertiary theme-text-tertiary border-transparent'
+                        ? 'theme-bg-primary theme-text-primary theme-border active:brightness-90'
                         : 'theme-bg-primary theme-text-primary theme-border active:brightness-90'
                         }`}
                 >
-                    Next <ChevronRight className="ml-2" />
+                    {isLast ? (
+                        <>Finish <CheckCircle className="ml-2" /></>
+                    ) : (
+                        <>Next <ChevronRight className="ml-2" /></>
+                    )}
                 </button>
                 {/* Version indicator */}
                 <span className="absolute bottom-1 left-2 text-[10px] text-gray-400 font-mono">

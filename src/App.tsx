@@ -4,6 +4,7 @@ import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail } fr
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
+import { StartingHoleModal } from './components/StartingHoleModal';
 import { saveRoundToGoogleSheets } from './services/googleSheetsService';
 
 const STORAGE_KEY = 'golf-app-rounds';
@@ -13,6 +14,7 @@ function App() {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [currentRoundId, setCurrentRoundId] = useState<string | null>(null);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
+  const [showStartHoleModal, setShowStartHoleModal] = useState(false);
 
   // Load rounds from localStorage on mount
   useEffect(() => {
@@ -48,8 +50,15 @@ function App() {
     return `${day}-${month}-${year}`;
   };
 
-  // Create a new round
-  const handleCreateRound = () => {
+  // Open modal to select starting hole
+  const handleCreateRoundRequest = () => {
+    setShowStartHoleModal(true);
+  };
+
+  // Create a new round with selected starting hole
+  const handleStartRoundConfirmed = (startingHole: number) => {
+    setShowStartHoleModal(false);
+
     const baseId = generateRoundId();
     let newRoundId = baseId;
 
@@ -58,21 +67,23 @@ function App() {
 
     if (roundsToday.length > 0) {
       // If rounds exist, append count to make unique ID
-      // Example: 05-12-2025 -> 05-12-2025-1 -> 05-12-2025-2
       newRoundId = `${baseId}-${roundsToday.length}`;
     }
+
+    const startHoleIndex = startingHole - 1;
 
     const newRound: Round = {
       id: newRoundId,
       date: new Date(),
       scores: {},
-      currentHoleIndex: 0,
+      currentHoleIndex: startHoleIndex,
+      startingHoleNumber: startingHole,
       isFinished: false,
     };
 
     setRounds(prev => [...prev, newRound]);
     setCurrentRoundId(newRoundId);
-    setCurrentHoleIndex(0);
+    setCurrentHoleIndex(startHoleIndex);
     setView('play');
   };
 
@@ -229,37 +240,33 @@ function App() {
     }));
   };
 
-  // Navigate to next hole
+  // Navigate to next hole (Circular)
   const handleNext = () => {
-    if (currentHoleIndex < COURSE_DATA.length - 1) {
-      const newIndex = currentHoleIndex + 1;
-      setCurrentHoleIndex(newIndex);
+    const nextIndex = (currentHoleIndex + 1) % COURSE_DATA.length;
+    setCurrentHoleIndex(nextIndex);
 
-      // Update current hole index in the round
-      if (currentRoundId) {
-        setRounds(prev => prev.map(round =>
-          round.id === currentRoundId
-            ? { ...round, currentHoleIndex: newIndex }
-            : round
-        ));
-      }
+    // Update current hole index in the round
+    if (currentRoundId) {
+      setRounds(prev => prev.map(round =>
+        round.id === currentRoundId
+          ? { ...round, currentHoleIndex: nextIndex }
+          : round
+      ));
     }
   };
 
-  // Navigate to previous hole
+  // Navigate to previous hole (Circular)
   const handlePrev = () => {
-    if (currentHoleIndex > 0) {
-      const newIndex = currentHoleIndex - 1;
-      setCurrentHoleIndex(newIndex);
+    const prevIndex = (currentHoleIndex - 1 + COURSE_DATA.length) % COURSE_DATA.length;
+    setCurrentHoleIndex(prevIndex);
 
-      // Update current hole index in the round
-      if (currentRoundId) {
-        setRounds(prev => prev.map(round =>
-          round.id === currentRoundId
-            ? { ...round, currentHoleIndex: newIndex }
-            : round
-        ));
-      }
+    // Update current hole index in the round
+    if (currentRoundId) {
+      setRounds(prev => prev.map(round =>
+        round.id === currentRoundId
+          ? { ...round, currentHoleIndex: prevIndex }
+          : round
+      ));
     }
   };
 
@@ -288,7 +295,7 @@ function App() {
     : null;
 
   const isCurrentRoundComplete = currentRound
-    ? (currentRound.isFinished || Object.keys(currentRound.scores).length === COURSE_DATA.length)
+    ? currentRound.isFinished
     : false;
 
   const currentHole = COURSE_DATA[currentHoleIndex];
@@ -298,12 +305,22 @@ function App() {
     putts: 0
   };
 
+  // Determine starting hole to calculate order
+  const startingHole = currentRound?.startingHoleNumber || 1;
+  const startingHoleIndex = startingHole - 1;
+
+  // Calculate strict isFirst/isLast for navigation bounds based on starting hole
+  // isFirst: matches start hole
+  // isLast: is the hole immediately preceding the start hole in the circle
+  const isFirst = currentHoleIndex === startingHoleIndex;
+  const isLast = (currentHoleIndex + 1) % COURSE_DATA.length === startingHoleIndex;
+
   return (
     <div className="min-h-screen w-full bg-white">
       {view === 'rounds' ? (
         <RoundsManager
           rounds={getRoundsMetadata()}
-          onCreateRound={handleCreateRound}
+          onCreateRound={handleCreateRoundRequest}
           onSelectRound={handleSelectRound}
           onDeleteRound={handleDeleteRound}
         />
@@ -318,8 +335,8 @@ function App() {
           onBackToRounds={() => setView('rounds')}
           onFinishRound={handleFinishRound}
           onSetTeeLocation={handleSetTeeLocation}
-          isFirst={currentHoleIndex === 0}
-          isLast={currentHoleIndex === COURSE_DATA.length - 1}
+          isFirst={isFirst}
+          isLast={isLast}
           isReadOnly={isCurrentRoundComplete}
         />
       ) : (
@@ -329,6 +346,12 @@ function App() {
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
         />
       )}
+
+      <StartingHoleModal
+        isOpen={showStartHoleModal}
+        onConfirm={handleStartRoundConfirmed}
+        onCancel={() => setShowStartHoleModal(false)}
+      />
     </div>
   );
 }

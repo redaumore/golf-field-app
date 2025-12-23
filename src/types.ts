@@ -33,6 +33,7 @@ export interface Round {
   date: Date;
   scores: Record<number, HoleScore>;
   currentHoleIndex: number;
+  startingHoleNumber?: number; // Hoyo inicial de la ronda (1-18)
   isFinished: boolean; // Marca si el jugador finalizó manualmente la rueda
 }
 
