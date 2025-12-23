@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle, Loade
 import { ConfirmModal } from './ConfirmModal';
 import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
+import { calculateDistance } from '../utils/geo';
 
 interface HoleViewProps {
     hole: Hole;
@@ -128,6 +129,28 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
+                            {(() => {
+                                const lastLocation = (() => {
+                                    const shotsWithLoc = score.approachShotsDetails?.filter(s => s.location);
+                                    if (shotsWithLoc && shotsWithLoc.length > 0) {
+                                        return shotsWithLoc[shotsWithLoc.length - 1].location;
+                                    }
+                                    return score.teeLocation;
+                                })();
+
+                                const dist = (hole.greenCenter && lastLocation)
+                                    ? calculateDistance(lastLocation, hole.greenCenter)
+                                    : null;
+
+                                if (dist === null) return null;
+
+                                return (
+                                    <span className="flex items-center text-green-600 ml-2 border-l pl-2 border-gray-300">
+                                        To Green: {dist}y
+                                    </span>
+                                );
+                            })()}
+
                         </div>
                     </div>
                 </div>
