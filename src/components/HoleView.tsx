@@ -15,7 +15,7 @@ interface HoleViewProps {
     onShowScorecard: () => void;
     onBackToRounds: () => void;
     onFinishRound: () => void;
-    onSetTeeLocation: (location: GeoLocation) => void;
+    // onSetTeeLocation removed as it is auto-set
     isFirst: boolean;
     isLast: boolean;
     isReadOnly?: boolean;
@@ -32,7 +32,6 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onShowScorecard,
     onBackToRounds,
     onFinishRound,
-    onSetTeeLocation,
     isFirst,
     isLast,
     isReadOnly = false,
@@ -40,7 +39,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
     const [isLocating, setIsLocating] = useState(false);
-    const [isSettingTee, setIsSettingTee] = useState(false);
+
 
     const totalScore = score.approachShots + score.putts;
     const scoreDiff = totalScore - hole.par;
@@ -52,25 +51,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
         return 'theme-text-primary text-black';
     };
 
-    const handleSetTee = () => {
-        if (!navigator.geolocation) return;
-        setIsSettingTee(true);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                onSetTeeLocation({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                });
-                setIsSettingTee(false);
-            },
-            (error) => {
-                console.warn("Tee location error:", error);
-                setIsSettingTee(false);
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-    };
+
 
     const handleAddApproach = () => {
         if (!selectedClub) return;
@@ -184,44 +165,14 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     </div>
                     <div className="text-sm font-bold theme-text-secondary uppercase tracking-widest mt-1 mb-4">Total Strokes</div>
 
-                    {/* Prominent Tee Location Button */}
-                    {!isReadOnly && (
-                        <button
-                            onClick={handleSetTee}
-                            disabled={isSettingTee}
-                            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold shadow-md transition-all transform active:scale-95 ${score.teeLocation
-                                ? 'bg-green-100 text-green-700 border-2 border-green-200'
-                                : 'bg-blue-600 text-white shadow-blue-200 shadow-lg animate-pulse'
-                                }`}
-                        >
-                            {isSettingTee ? (
-                                <>
-                                    <Loader2 size={18} className="animate-spin" />
-                                    <span>Locating...</span>
-                                </>
-                            ) : score.teeLocation ? (
-                                <>
-                                    <MapPin size={18} className="fill-current" />
-                                    <span>Tee Location Set</span>
-                                    <span className="text-xs opacity-75 font-mono ml-1">
-                                        ({score.teeLocation.latitude.toFixed(4)})
-                                    </span>
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin size={20} />
-                                    <span>START HOLE (SET TEE)</span>
-                                </>
-                            )}
-                        </button>
-                    )}
+
                 </div>
 
                 {/* Controls */}
                 <div className={`grid grid-cols-1 gap-6 ${isReadOnly ? 'opacity-80' : ''}`}>
 
                     {/* Approach Section */}
-                    <div className={`theme-card-approach rounded-2xl p-4 border-2 space-y-4 transition-opacity ${!score.teeLocation && !isReadOnly ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className={`theme-card-approach rounded-2xl p-4 border-2 space-y-4`}>
                         <div className="text-center font-bold theme-text-approach uppercase tracking-wide">Approach</div>
                         <div className="flex items-center justify-between">
                             <button
@@ -238,7 +189,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                     ? 'theme-btn-approach border-current'
                                     : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
                                     }`}
-                                disabled={isReadOnly || !selectedClub || isLocating || !score.teeLocation}
+                                disabled={isReadOnly || !selectedClub || isLocating}
                             >
                                 {isLocating ? <Loader2 className="animate-spin" size={24} /> : '+'}
                             </button>
@@ -253,7 +204,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                         <button
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
-                                            className={`py-2 px-1 rounded-lg text-xs font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
+                                            className={`py-2 px-1 rounded-lg text-sm font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
                                                 ? club === 'LostBall'
                                                     ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-2 ring-red-200 scale-105'
                                                     : 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
@@ -269,11 +220,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 </div>
                             </div>
                         )}
-                        {!score.teeLocation && !isReadOnly && (
-                            <div className="text-center text-xs text-red-500 font-bold uppercase tracking-wide mt-2">
-                                Set Tee Location first
-                            </div>
-                        )}
+                        {/* 
+                         No longer showing "Set Tee Location first" warning as it is auto-set
+                        */}
                     </div>
 
                     {/* Putting Section */}

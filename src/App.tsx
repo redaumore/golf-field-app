@@ -10,6 +10,40 @@ import { calculateDistance } from './utils/geo';
 
 const STORAGE_KEY = 'golf-app-rounds';
 
+const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
+  if (!round) return undefined;
+
+  const holeData = COURSE_DATA[holeIndex];
+  const holeNumber = holeData.number;
+
+  // Initialize score object if missing
+  const currentScore = round.scores[holeNumber] || {
+    holeNumber,
+    approachShots: 0,
+    putts: 0,
+    approachShotsDetails: []
+  };
+
+  // If teeLocation is already set, do nothing
+  if (currentScore.teeLocation) return round;
+
+  // If static tee location exists, use it
+  if (holeData.teeLocation) {
+    return {
+      ...round,
+      scores: {
+        ...round.scores,
+        [holeNumber]: {
+          ...currentScore,
+          teeLocation: { ...holeData.teeLocation } // No accuracy needed as it is optional now
+        }
+      }
+    };
+  }
+
+  return round;
+};
+
 function App() {
   const [view, setView] = useState<View>('rounds');
   const [rounds, setRounds] = useState<Round[]>([]);
@@ -73,7 +107,7 @@ function App() {
 
     const startHoleIndex = startingHole - 1;
 
-    const newRound: Round = {
+    let newRound: Round = {
       id: newRoundId,
       date: new Date(),
       scores: {},
@@ -81,6 +115,12 @@ function App() {
       startingHoleNumber: startingHole,
       isFinished: false,
     };
+
+    // Auto-set tee location for the first hole
+    const roundWithTee = ensureTeeLocation(newRound, startHoleIndex);
+    if (roundWithTee) {
+      newRound = roundWithTee;
+    }
 
     setRounds(prev => [...prev, newRound]);
     setCurrentRoundId(newRoundId);
@@ -94,6 +134,18 @@ function App() {
     if (round) {
       setCurrentRoundId(roundId);
       setCurrentHoleIndex(round.currentHoleIndex);
+
+      // Ensure tee location for current hole when resuming
+      if (!round.isFinished) {
+        setRounds(prev => prev.map(r => {
+          if (r.id === roundId) {
+            const updated = ensureTeeLocation(r, round.currentHoleIndex);
+            return updated || r;
+          }
+          return r;
+        }));
+      }
+
       // Si la rueda está finalizada, ir directo al scorecard
       setView(round.isFinished ? 'scorecard' : 'play');
     }
@@ -137,29 +189,7 @@ function App() {
   // Calculate distance in yards between two coordinates
 
 
-  const handleSetTeeLocation = (location: GeoLocation) => {
-    if (!currentRoundId) return;
-    const holeNumber = COURSE_DATA[currentHoleIndex].number;
 
-    setRounds(prev => prev.map(round => {
-      if (round.id !== currentRoundId) return round;
-
-      const currentScore = round.scores[holeNumber] || {
-        holeNumber,
-        approachShots: 0,
-        putts: 0,
-        approachShotsDetails: []
-      };
-
-      return {
-        ...round,
-        scores: {
-          ...round.scores,
-          [holeNumber]: { ...currentScore, teeLocation: location }
-        }
-      };
-    }));
-  }
 
   // Update score for current round
   const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation) => {
@@ -232,13 +262,16 @@ function App() {
     const nextIndex = (currentHoleIndex + 1) % COURSE_DATA.length;
     setCurrentHoleIndex(nextIndex);
 
-    // Update current hole index in the round
+    // Update current hole index in the round and ensure tee location for next hole
     if (currentRoundId) {
-      setRounds(prev => prev.map(round =>
-        round.id === currentRoundId
-          ? { ...round, currentHoleIndex: nextIndex }
-          : round
-      ));
+      setRounds(prev => prev.map(round => {
+        if (round.id === currentRoundId) {
+          let updatedRound = { ...round, currentHoleIndex: nextIndex };
+          const roundWithTee = ensureTeeLocation(updatedRound, nextIndex);
+          return roundWithTee || updatedRound;
+        }
+        return round;
+      }));
     }
   };
 
@@ -247,13 +280,16 @@ function App() {
     const prevIndex = (currentHoleIndex - 1 + COURSE_DATA.length) % COURSE_DATA.length;
     setCurrentHoleIndex(prevIndex);
 
-    // Update current hole index in the round
+    // Update current hole index in the round and ensure tee location for prev hole
     if (currentRoundId) {
-      setRounds(prev => prev.map(round =>
-        round.id === currentRoundId
-          ? { ...round, currentHoleIndex: prevIndex }
-          : round
-      ));
+      setRounds(prev => prev.map(round => {
+        if (round.id === currentRoundId) {
+          let updatedRound = { ...round, currentHoleIndex: prevIndex };
+          const roundWithTee = ensureTeeLocation(updatedRound, prevIndex);
+          return roundWithTee || updatedRound;
+        }
+        return round;
+      }));
     }
   };
 
@@ -321,7 +357,7 @@ function App() {
           onShowScorecard={() => setView('scorecard')}
           onBackToRounds={() => setView('rounds')}
           onFinishRound={handleFinishRound}
-          onSetTeeLocation={handleSetTeeLocation}
+
           isFirst={isFirst}
           isLast={isLast}
           isReadOnly={isCurrentRoundComplete}

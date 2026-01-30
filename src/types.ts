@@ -7,6 +7,10 @@ export interface Hole {
     latitude: number;
     longitude: number;
   };
+  teeLocation?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | 'Pw' | 'Sd' | '60' | 'LostBall';
@@ -14,7 +18,7 @@ export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | '
 export interface GeoLocation {
   latitude: number;
   longitude: number;
-  accuracy: number;
+  accuracy?: number;
 }
 
 export interface ShotDetail {
