@@ -5,7 +5,7 @@ import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
 import { StartingHoleModal } from './components/StartingHoleModal';
-import { saveRoundToGoogleSheets } from './services/googleSheetsService';
+import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets } from './services/googleSheetsService';
 import { calculateDistance } from './utils/geo';
 
 const STORAGE_KEY = 'golf-app-rounds';
@@ -67,6 +67,26 @@ function App() {
         console.error('Failed to load rounds', e);
       }
     }
+  }, []);
+
+  // Sync with Google Sheets on mount
+  useEffect(() => {
+    const syncWithCloud = async () => {
+      try {
+        const remoteRounds = await fetchRoundsFromGoogleSheets();
+        if (remoteRounds.length > 0) {
+          setRounds(prev => {
+            const currentIds = new Set(prev.map(r => r.id));
+            const newRounds = remoteRounds.filter(r => !currentIds.has(r.id));
+            return [...prev, ...newRounds];
+          });
+        }
+      } catch (error) {
+        console.error('Failed to sync rounds:', error);
+      }
+    };
+
+    syncWithCloud();
   }, []);
 
   // Save rounds to localStorage whenever they change
