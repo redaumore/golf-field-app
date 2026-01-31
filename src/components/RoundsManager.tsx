@@ -10,6 +10,8 @@ interface RoundsManagerProps {
     onCreateRound: () => void;
     onSelectRound: (roundId: string) => void;
     onDeleteRound: (roundId: string) => void;
+    onSyncRound: (roundId: string) => Promise<void>;
+    isLoading?: boolean;
 }
 
 export const RoundsManager: React.FC<RoundsManagerProps> = ({
@@ -17,9 +19,13 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
     onCreateRound,
     onSelectRound,
     onDeleteRound,
+    onSyncRound,
+    isLoading = false,
 }) => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [roundToDelete, setRoundToDelete] = useState<{ id: string; date: Date } | null>(null);
+    const [syncingRoundId, setSyncingRoundId] = useState<string | null>(null);
+
     const formatDate = (date: Date) => {
         const d = new Date(date);
         return d.toLocaleDateString('es-ES', {
@@ -33,10 +39,22 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
         new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
+    const handleSync = async (roundId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (syncingRoundId) return;
+
+        setSyncingRoundId(roundId);
+        try {
+            await onSyncRound(roundId);
+        } finally {
+            setSyncingRoundId(null);
+        }
+    };
+
     return (
-        <div className="flex flex-col min-h-screen theme-bg-primary theme-text-primary">
+        <div className="flex flex-col h-screen overflow-hidden theme-bg-primary theme-text-primary">
             {/* Header */}
-            <div className="relative p-4 theme-bg-secondary theme-border border-b">
+            <div className="relative p-4 theme-bg-secondary theme-border border-b flex-none">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-black">Golf Rounds</h1>
@@ -51,7 +69,7 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 p-4 space-y-4">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                 {/* Create New Round Button */}
                 <button
                     onClick={onCreateRound}
@@ -62,7 +80,12 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                 </button>
 
                 {/* Rounds List */}
-                {sortedRounds.length === 0 ? (
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 theme-text-tertiary">
+                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-lg font-semibold animate-pulse">Loading rounds...</p>
+                    </div>
+                ) : sortedRounds.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 theme-text-tertiary">
                         <Calendar size={64} className="mb-4 opacity-50" />
                         <p className="text-lg font-semibold">No rounds yet</p>
@@ -101,6 +124,40 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                             </span>
                                         </div>
                                     </div>
+
+                                    {/* Sync Button */}
+                                    <button
+                                        onClick={(e) => handleSync(round.id, e)}
+                                        disabled={syncingRoundId === round.id}
+                                        className={`p-2 rounded-full transition-all ${syncingRoundId === round.id
+                                            ? 'bg-gray-100 text-gray-400'
+                                            : 'text-blue-500 hover:bg-blue-50 active:bg-blue-100'
+                                            }`}
+                                        title="Sync to Cloud"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="20"
+                                            height="20"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className={syncingRoundId === round.id ? 'animate-spin' : ''}
+                                        >
+                                            {syncingRoundId === round.id ? (
+                                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                            ) : (
+                                                <>
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                    <polyline points="17 8 12 3 7 8" />
+                                                    <line x1="12" x2="12" y1="3" y2="15" />
+                                                </>
+                                            )}
+                                        </svg>
+                                    </button>
                                 </div>
 
                                 <div className="flex gap-2">

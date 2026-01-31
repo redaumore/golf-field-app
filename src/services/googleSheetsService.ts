@@ -15,7 +15,8 @@ export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
         0
     );
 
-    const payload: SheetPayload = {
+    const payload: SheetPayload & { action: string } = {
+        action: 'save',
         id: round.id,
         date: new Date(round.date).toISOString(),
         totalScore,
@@ -39,8 +40,53 @@ export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
 
         const result = await response.json();
         console.log('Round saved to Google Sheets:', result);
+
+        if (result.result === 'error') {
+            throw new Error(`Google Sheets Error: ${result.error}`);
+        }
     } catch (error) {
         console.error('Error saving round to Google Sheets:', error);
+        throw error;
+    }
+};
+
+export const deleteRoundFromGoogleSheets = async (roundId: string): Promise<void> => {
+    const payload = {
+        action: 'delete',
+        id: roundId
+    };
+
+    try {
+        const response = await fetch(GOOGLE_SHEETS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Round deleted from Google Sheets:', result);
+
+        if (result.result === 'error') {
+            throw new Error(`Google Sheets Error: ${result.error}`);
+        }
+        if (result.result !== 'deleted') {
+            // If we didn't get 'deleted', maybe 'not found' -> acceptable?
+            // But if logic failed, we should know.
+            if (result.result === 'not found') {
+                console.warn('Round to delete was not found in sheet.');
+                return;
+            }
+            throw new Error(`Unexpected result from server: ${JSON.stringify(result)}`);
+        }
+    } catch (error) {
+        console.error('Error deleting round from Google Sheets:', error);
+        throw error;
     }
 };
 

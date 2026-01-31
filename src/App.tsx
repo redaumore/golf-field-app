@@ -5,10 +5,11 @@ import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
 import { StartingHoleModal } from './components/StartingHoleModal';
-import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets } from './services/googleSheetsService';
+import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets, deleteRoundFromGoogleSheets } from './services/googleSheetsService';
 import { calculateDistance } from './utils/geo';
 
 const STORAGE_KEY = 'golf-app-rounds';
+// ... (keep ensureTeeLocation and App component start) ...
 
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
   if (!round) return undefined;
@@ -50,6 +51,7 @@ function App() {
   const [currentRoundId, setCurrentRoundId] = useState<string | null>(null);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
   const [showStartHoleModal, setShowStartHoleModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load rounds from localStorage on mount
   useEffect(() => {
@@ -72,17 +74,17 @@ function App() {
   // Sync with Google Sheets on mount
   useEffect(() => {
     const syncWithCloud = async () => {
+      setIsLoading(true);
       try {
         const remoteRounds = await fetchRoundsFromGoogleSheets();
-        if (remoteRounds.length > 0) {
-          setRounds(prev => {
-            const currentIds = new Set(prev.map(r => r.id));
-            const newRounds = remoteRounds.filter(r => !currentIds.has(r.id));
-            return [...prev, ...newRounds];
-          });
-        }
+        // User requested to show *only* rounds from the sheet, removing any local stale state.
+        // We replace the current state entirely with what we got from the cloud.
+        setRounds(remoteRounds);
       } catch (error) {
         console.error('Failed to sync rounds:', error);
+        // If sync fails, we keep the localStorage rounds (fallback)
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -172,11 +174,20 @@ function App() {
   };
 
   // Delete a round
-  const handleDeleteRound = (roundId: string) => {
+  const handleDeleteRound = async (roundId: string) => {
+    // Optimistic update
     setRounds(prev => prev.filter(r => r.id !== roundId));
+
     if (currentRoundId === roundId) {
       setCurrentRoundId(null);
       setView('rounds');
+    }
+
+    try {
+      await deleteRoundFromGoogleSheets(roundId);
+    } catch (error) {
+      console.error('Failed to delete round from cloud:', error);
+      alert('Could not delete round from Google Sheets. It might reappear on next sync.');
     }
   };
 
@@ -366,6 +377,20 @@ function App() {
           onCreateRound={handleCreateRoundRequest}
           onSelectRound={handleSelectRound}
           onDeleteRound={handleDeleteRound}
+          isLoading={isLoading}
+          onSyncRound={async (roundId) => {
+            const round = rounds.find(r => r.id === roundId);
+            if (round) {
+              const roundToSave = { ...round, isFinished: true }; // Ensure it's marked as finished on sync
+              try {
+                await saveRoundToGoogleSheets(roundToSave);
+                alert('Runda sync successful');
+              } catch (error) {
+                console.error('Sync failed', error);
+                alert('Sync failed. Please try again.');
+              }
+            }
+          }}
         />
       ) : view === 'play' ? (
         <HoleView
