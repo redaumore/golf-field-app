@@ -4,6 +4,8 @@ import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail } fr
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
+import { ConfirmModal } from './components/ConfirmModal';
+import { InfoModal } from './components/InfoModal';
 import { StartingHoleModal } from './components/StartingHoleModal';
 import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets, deleteRoundFromGoogleSheets } from './services/googleSheetsService';
 import { calculateDistance } from './utils/geo';
@@ -53,6 +55,28 @@ function App() {
   const [showStartHoleModal, setShowStartHoleModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // State for sync conflict handling
+  const [syncConflictModalOpen, setSyncConflictModalOpen] = useState(false);
+  const [pendingRemoteRounds, setPendingRemoteRounds] = useState<Round[]>([]);
+  const [unsavedLocalRoundsCount, setUnsavedLocalRoundsCount] = useState(0);
+
+  // State for Info Modal (Alert replacement)
+  const [infoModalState, setInfoModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showInfo = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setInfoModalState({ isOpen: true, title, message, type });
+  };
+
   // Load rounds from localStorage on mount
   useEffect(() => {
     const savedRounds = localStorage.getItem(STORAGE_KEY);
@@ -77,9 +101,32 @@ function App() {
       setIsLoading(true);
       try {
         const remoteRounds = await fetchRoundsFromGoogleSheets();
-        // User requested to show *only* rounds from the sheet, removing any local stale state.
-        // We replace the current state entirely with what we got from the cloud.
-        setRounds(remoteRounds);
+
+        // Read directly from localStorage to check for unsaved rounds
+        // We do this to ensure we are comparing against the "boot" state
+        const savedRoundsStr = localStorage.getItem(STORAGE_KEY);
+        let localRounds: Round[] = [];
+        if (savedRoundsStr) {
+          try {
+            const parsed = JSON.parse(savedRoundsStr);
+            // Simple cast only for ID check
+            localRounds = parsed.map((r: any) => ({ ...r, date: new Date(r.date) }));
+          } catch (e) { console.error(e); }
+        }
+
+        // Find rounds that are in local but NOT in remote
+        const localOnly = localRounds.filter(local => !remoteRounds.some(remote => remote.id === local.id));
+
+        if (localOnly.length > 0) {
+          // Conflict found! Ask user what to do.
+          setPendingRemoteRounds(remoteRounds);
+          setUnsavedLocalRoundsCount(localOnly.length);
+          setSyncConflictModalOpen(true);
+        } else {
+          // No conflict, safe to overwrite
+          setRounds(remoteRounds);
+        }
+
       } catch (error) {
         console.error('Failed to sync rounds:', error);
         // If sync fails, we keep the localStorage rounds (fallback)
@@ -88,8 +135,34 @@ function App() {
       }
     };
 
-    syncWithCloud();
+    if (navigator.onLine) {
+      syncWithCloud();
+    }
   }, []);
+
+  const handleKeepLocalRounds = () => {
+    // Merge strategy: Keep all local rounds that are missing from remote + all remote rounds
+    // Essentially: Remote is source of truth for its own IDs. Local is source of truth for new IDs.
+    const localRoundsStr = localStorage.getItem(STORAGE_KEY);
+    let localRounds: Round[] = [];
+    if (localRoundsStr) try { localRounds = JSON.parse(localRoundsStr).map((r: any) => ({ ...r, date: new Date(r.date) })); } catch (e) { }
+
+    const localOnly = localRounds.filter(local => !pendingRemoteRounds.some(remote => remote.id === local.id));
+    const merged = [...pendingRemoteRounds, ...localOnly];
+
+    // Sort by date desc
+    merged.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    setRounds(merged);
+    setSyncConflictModalOpen(false);
+    setPendingRemoteRounds([]);
+  };
+
+  const handleDiscardLocalRounds = () => {
+    setRounds(pendingRemoteRounds);
+    setSyncConflictModalOpen(false);
+    setPendingRemoteRounds([]);
+  };
 
   // Save rounds to localStorage whenever they change
   useEffect(() => {
@@ -187,7 +260,11 @@ function App() {
       await deleteRoundFromGoogleSheets(roundId);
     } catch (error) {
       console.error('Failed to delete round from cloud:', error);
-      alert('Could not delete round from Google Sheets. It might reappear on next sync.');
+      showInfo(
+        'Delete Failed',
+        'Could not delete round from Google Sheets. It might reappear on next sync.',
+        'error'
+      );
     }
   };
 
@@ -201,10 +278,10 @@ function App() {
       const finishedRound = { ...roundToSave, isFinished: true };
       try {
         await saveRoundToGoogleSheets(finishedRound);
-        alert('Ronda guardada correctamente en Google Sheets');
+        showInfo('Saved Successfully', 'Round has been saved to Google Sheets.', 'success');
       } catch (error) {
         console.error('Error saving to Google Sheets:', error);
-        alert('Error al guardar en Google Sheets, pero se guardó localmente.');
+        showInfo('Save Failed', 'Error saving to Google Sheets, but it was saved locally.', 'error');
       }
     }
 
@@ -384,10 +461,10 @@ function App() {
               const roundToSave = { ...round, isFinished: true }; // Ensure it's marked as finished on sync
               try {
                 await saveRoundToGoogleSheets(roundToSave);
-                alert('Runda sync successful');
+                showInfo('Sync Successful', 'Round synced to cloud.', 'success');
               } catch (error) {
                 console.error('Sync failed', error);
-                alert('Sync failed. Please try again.');
+                showInfo('Sync Failed', 'Failed to sync round. Please try again.', 'error');
               }
             }
           }}
@@ -419,6 +496,25 @@ function App() {
         isOpen={showStartHoleModal}
         onConfirm={handleStartRoundConfirmed}
         onCancel={() => setShowStartHoleModal(false)}
+      />
+
+      <ConfirmModal
+        isOpen={syncConflictModalOpen}
+        title="Unsynced Rounds Found"
+        message={`We found ${unsavedLocalRoundsCount} round(s) on your device that are not saved in the cloud. Do you want to keep them?`}
+        confirmText="Keep & Sync"
+        cancelText="Discard (Use Cloud Only)"
+        confirmButtonClass="bg-blue-600 text-white hover:bg-blue-700"
+        onConfirm={handleKeepLocalRounds}
+        onCancel={handleDiscardLocalRounds}
+      />
+
+      <InfoModal
+        isOpen={infoModalState.isOpen}
+        title={infoModalState.title}
+        message={infoModalState.message}
+        type={infoModalState.type}
+        onClose={() => setInfoModalState(prev => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
