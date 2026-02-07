@@ -9,6 +9,7 @@ import { InfoModal } from './components/InfoModal';
 import { StartingHoleModal } from './components/StartingHoleModal';
 import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets, deleteRoundFromGoogleSheets } from './services/googleSheetsService';
 import { calculateDistance } from './utils/geo';
+import { calculateRelativeScore } from './utils/score';
 
 const STORAGE_KEY = 'golf-app-rounds';
 // ... (keep ensureTeeLocation and App component start) ...
@@ -479,10 +480,10 @@ function App() {
           onShowScorecard={() => setView('scorecard')}
           onBackToRounds={() => setView('rounds')}
           onFinishRound={handleFinishRound}
-
           isFirst={isFirst}
           isLast={isLast}
           isReadOnly={isCurrentRoundComplete}
+          relativeScore={calculateRelativeScore(COURSE_DATA, currentRound?.scores || {})}
         />
       ) : (
         <Scorecard

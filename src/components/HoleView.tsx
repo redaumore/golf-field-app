@@ -19,6 +19,7 @@ interface HoleViewProps {
     isFirst: boolean;
     isLast: boolean;
     isReadOnly?: boolean;
+    relativeScore: number;
 }
 
 const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
@@ -35,6 +36,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     isFirst,
     isLast,
     isReadOnly = false,
+    relativeScore,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
@@ -42,14 +44,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
 
     const totalScore = score.approachShots + score.putts;
-    const scoreDiff = totalScore - hole.par;
 
-    const getScoreColor = () => {
-        if (totalScore === 0) return 'text-gray-400';
-        if (scoreDiff < 0) return 'text-red-600';
-        if (scoreDiff === 0) return 'text-blue-600';
-        return 'theme-text-primary text-black';
-    };
 
 
 
@@ -160,12 +155,24 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
                 {/* Total Score Display */}
                 <div className="flex flex-col items-center justify-center pt-2 pb-4">
-                    <div className={`text-6xl font-black ${getScoreColor()}`}>
-                        {totalScore === 0 ? '-' : totalScore}
+                    <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-center">
+                            <div className={`text-6xl font-black ${totalScore === 0 ? 'text-gray-400' : 'theme-text-primary text-black'}`}>
+                                {totalScore === 0 ? '-' : totalScore}
+                            </div>
+                            <div className="text-[10px] font-bold theme-text-secondary uppercase tracking-widest mt-1">Strokes</div>
+                        </div>
+
+                        <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+
+                        <div className="flex flex-col items-center">
+                            <div className={`text-6xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
+                                }`}>
+                                {relativeScore > 0 ? `+${relativeScore}` : relativeScore === 0 ? 'E' : relativeScore}
+                            </div>
+                            <div className="text-[10px] font-bold theme-text-secondary uppercase tracking-widest mt-1">To Par</div>
+                        </div>
                     </div>
-                    <div className="text-sm font-bold theme-text-secondary uppercase tracking-widest mt-1 mb-4">Total Strokes</div>
-
-
                 </div>
 
                 {/* Controls */}

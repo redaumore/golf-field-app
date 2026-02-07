@@ -3,6 +3,7 @@ import type { Hole, HoleScore } from '../types';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
+import { calculateRelativeScore } from '../utils/score';
 
 interface ScorecardProps {
     course: Hole[];
@@ -14,7 +15,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
 
     const totalShots = Object.values(scores).reduce((acc, score) => acc + score.approachShots + score.putts, 0);
-    const totalPar = course.reduce((acc, hole) => acc + hole.par, 0);
+    const playedHoles = course.filter(hole => scores[hole.number] && (scores[hole.number].approachShots + scores[hole.number].putts > 0));
+    const totalPar = playedHoles.reduce((acc, hole) => acc + hole.par, 0);
+    const relativeScore = calculateRelativeScore(course, scores);
 
     const getScoreForHole = (holeNumber: number) => {
         const score = scores[holeNumber];
@@ -55,10 +58,22 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                <div className="mb-6 p-4 theme-card-approach rounded-lg text-center border-2">
-                    <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total Score</div>
-                    <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
-                    <div className="text-sm theme-text-approach mt-1 opacity-75">Par {totalPar}</div>
+                <div className="mb-6 p-4 theme-card-approach rounded-lg border-2">
+                    <div className="flex justify-around items-center">
+                        <div className="text-center">
+                            <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total</div>
+                            <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
+                            <div className="text-xs theme-text-approach opacity-75">Par {totalPar}</div>
+                        </div>
+                        <div className="w-px h-12 bg-blue-200 opacity-50"></div>
+                        <div className="text-center">
+                            <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">To Par</div>
+                            <div className={`text-4xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
+                                }`}>
+                                {relativeScore > 0 ? `+${relativeScore}` : relativeScore === 0 ? 'E' : relativeScore}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="space-y-3">
