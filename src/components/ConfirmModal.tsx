@@ -7,6 +7,7 @@ interface ConfirmModalProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
+    showCancel?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
     confirmButtonClass?: string;
@@ -18,6 +19,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     message,
     confirmText = 'Confirm',
     cancelText = 'Cancel',
+    showCancel = true,
     onConfirm,
     onCancel,
     confirmButtonClass = 'bg-blue-600 text-white hover:bg-blue-700',
@@ -54,12 +56,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                    <button
-                        onClick={onCancel}
-                        className="flex-1 px-4 py-3 theme-bg-tertiary theme-text-primary font-bold rounded-xl hover:theme-bg-secondary active:theme-bg-secondary transition-colors"
-                    >
-                        {cancelText}
-                    </button>
+                    {showCancel && (
+                        <button
+                            onClick={onCancel}
+                            className="flex-1 px-4 py-3 theme-bg-tertiary theme-text-primary font-bold rounded-xl hover:theme-bg-secondary active:theme-bg-secondary transition-colors"
+                        >
+                            {cancelText}
+                        </button>
+                    )}
                     <button
                         onClick={onConfirm}
                         className={`flex-1 px-4 py-3 font-bold rounded-xl active:scale-95 transition-all ${confirmButtonClass}`}

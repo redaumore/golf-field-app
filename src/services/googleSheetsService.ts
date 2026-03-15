@@ -1,5 +1,5 @@
 import { GOOGLE_SHEETS_API_URL } from '../constants/api';
-import type { Round } from '../types';
+import type { Round, DrivingSession } from '../types';
 
 interface SheetPayload {
     id: string;
@@ -121,6 +121,72 @@ export const fetchRoundsFromGoogleSheets = async (): Promise<Round[]> => {
         }));
     } catch (error) {
         console.error('Error fetching rounds from Google Sheets:', error);
+        throw error;
+    }
+};
+
+export const saveDrivingSessionToGoogleSheets = async (session: DrivingSession): Promise<void> => {
+    const payload = {
+        action: 'save_driving_session',
+        id: session.id,
+        date: new Date(session.date).toISOString(),
+        club: session.club,
+        shots: session.shots,
+        isFinished: session.isFinished
+    };
+
+    try {
+        const response = await fetch(GOOGLE_SHEETS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Driving session saved to Google Sheets:', result);
+
+        if (result.result === 'error') {
+            throw new Error(`Google Sheets Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error saving driving session to Google Sheets:', error);
+        throw error;
+    }
+};
+
+export const deleteDrivingSessionFromGoogleSheets = async (id: string): Promise<void> => {
+    const payload = {
+        action: 'delete_driving_session',
+        id: id
+    };
+
+    try {
+        const response = await fetch(GOOGLE_SHEETS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Driving session deleted from Google Sheets:', result);
+
+        if (result.result === 'error') {
+            throw new Error(`Google Sheets Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error deleting driving session from Google Sheets:', error);
         throw error;
     }
 };

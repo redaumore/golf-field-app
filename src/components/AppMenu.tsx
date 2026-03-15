@@ -6,12 +6,14 @@ interface AppMenuProps {
     isOpen: boolean;
     onClose: () => void;
     onNavigateToRounds: () => void;
+    onNavigateToDriving: () => void;
 }
 
 export const AppMenu: React.FC<AppMenuProps> = ({
     isOpen,
     onClose,
-    onNavigateToRounds
+    onNavigateToRounds,
+    onNavigateToDriving
 }) => {
     if (!isOpen) return null;
 
@@ -45,6 +47,23 @@ export const AppMenu: React.FC<AppMenuProps> = ({
                         <Home size={20} className="text-green-600 dark:text-green-400" />
                     </div>
                     <span className="text-lg">Golf Rounds</span>
+                </button>
+
+                <button
+                    onClick={() => {
+                        onClose();
+                        onNavigateToDriving();
+                    }}
+                    className="flex items-center gap-4 w-full p-4 theme-bg-secondary rounded-xl font-bold border theme-border hover:brightness-95 active:scale-95 transition-all text-left"
+                >
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-400">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="6"/>
+                            <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                    </div>
+                    <span className="text-lg">Driving Range</span>
                 </button>
 
 

@@ -11,6 +11,7 @@ import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets, deleteRoundFromGo
 import { calculateDistance } from './utils/geo';
 import { calculateRelativeScore } from './utils/score';
 import { AppMenu } from './components/AppMenu';
+import { DrivingRange } from './components/DrivingRange';
 
 const STORAGE_KEY = 'golf-app-rounds';
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
@@ -529,12 +530,16 @@ function App() {
           isReadOnly={isCurrentRoundComplete}
           relativeScore={calculateRelativeScore(COURSE_DATA, currentRound?.scores || {})}
         />
-      ) : (
+      ) : view === 'scorecard' ? (
         <Scorecard
           onMenuClick={() => setShowAppMenu(true)}
           course={COURSE_DATA}
           scores={currentRound?.scores || {}}
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
+        />
+      ) : (
+        <DrivingRange 
+          onMenuClick={() => setShowAppMenu(true)}
         />
       )}
 
@@ -542,6 +547,7 @@ function App() {
         isOpen={showAppMenu}
         onClose={() => setShowAppMenu(false)}
         onNavigateToRounds={() => setView('rounds')}
+        onNavigateToDriving={() => setView('driving')}
       />
 
       <StartingHoleModal

@@ -53,4 +53,18 @@ export interface RoundMetadata {
   isComplete: boolean;
 }
 
-export type View = 'rounds' | 'play' | 'scorecard';
+export type View = 'rounds' | 'play' | 'scorecard' | 'driving';
+
+export interface DrivingShot {
+  id: string;
+  timestamp: number;
+  direction: 'far-left' | 'left' | 'center' | 'right' | 'far-right';
+}
+
+export interface DrivingSession {
+  id: string;
+  date: Date;
+  club: 'Driver' | 'Wood' | 'Long Iron' | 'Short Iron';
+  shots: DrivingShot[];
+  isFinished: boolean;
+}
