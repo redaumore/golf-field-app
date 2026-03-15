@@ -1,25 +1,23 @@
 import { useState } from 'react';
 import type { Hole, HoleScore, GolfClub, GeoLocation } from '../types';
-import { ChevronLeft, ChevronRight, List, MapPin, Flag, Home, CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
 import { calculateDistance } from '../utils/geo';
 
 interface HoleViewProps {
     hole: Hole;
     score: HoleScore;
-    onUpdateScore: (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation) => void;
+    onUpdateScore: (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean) => void;
     onNext: () => void;
     onPrev: () => void;
-    onShowScorecard: () => void;
-    onBackToRounds: () => void;
     onFinishRound: () => void;
     // onSetTeeLocation removed as it is auto-set
     isFirst: boolean;
     isLast: boolean;
     isReadOnly?: boolean;
     relativeScore: number;
+    onMenuClick: () => void;
 }
 
 const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
@@ -30,18 +28,18 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onUpdateScore,
     onNext,
     onPrev,
-    onShowScorecard,
-    onBackToRounds,
     onFinishRound,
     isFirst,
     isLast,
     isReadOnly = false,
     relativeScore,
+    onMenuClick,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
     const [isLocating, setIsLocating] = useState(false);
-
+    const [isRepresentative, setIsRepresentative] = useState(false);
+    const [showHoleImage, setShowHoleImage] = useState(false);
 
     const totalScore = score.approachShots + score.putts;
 
@@ -53,8 +51,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
         // Special handling for Lost Ball: No geolocation needed
         if (selectedClub === 'LostBall') {
-            onUpdateScore('approach', 1, selectedClub);
+            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
             setSelectedClub(null);
+            setIsRepresentative(false);
             return;
         }
 
@@ -67,15 +66,17 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy
-                    });
+                    }, isRepresentative);
                     setSelectedClub(null);
+                    setIsRepresentative(false);
                     setIsLocating(false);
                 },
                 (error) => {
                     console.warn("Geolocation error:", error);
                     // Fallback without location if error occurs
-                    onUpdateScore('approach', 1, selectedClub);
+                    onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
                     setSelectedClub(null);
+                    setIsRepresentative(false);
                     setIsLocating(false);
                 },
                 // High accuracy for golf course precision
@@ -83,8 +84,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
             );
         } else {
             // Fallback for browsers without geolocation
-            onUpdateScore('approach', 1, selectedClub);
+            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
             setSelectedClub(null);
+            setIsRepresentative(false);
             setIsLocating(false);
         }
     };
@@ -94,64 +96,74 @@ export const HoleView: React.FC<HoleViewProps> = ({
             {/* Header - Fixed at top */}
             <div className="flex items-center justify-between p-4 theme-bg-secondary theme-border border-b shrink-0 z-10 shadow-sm">
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={onBackToRounds}
-                        className="p-2 theme-btn-primary rounded-lg shadow-sm"
-                    >
-                        <Home size={20} />
-                    </button>
+
                     <div className="flex flex-col">
                         <h1 className="text-3xl font-black">Hole {hole.number}</h1>
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
-                            {(() => {
-                                const lastLocation = (() => {
-                                    const shotsWithLoc = score.approachShotsDetails?.filter(s => s.location);
-                                    if (shotsWithLoc && shotsWithLoc.length > 0) {
-                                        return shotsWithLoc[shotsWithLoc.length - 1].location;
-                                    }
-                                    return score.teeLocation;
-                                })();
-
-                                const dist = (hole.greenCenter && lastLocation)
-                                    ? calculateDistance(lastLocation, hole.greenCenter)
-                                    : null;
-
-                                if (dist === null) return null;
-
-                                return (
-                                    <span className="flex items-center text-green-600 ml-2 border-l pl-2 border-gray-300">
-                                        To Green: {dist}y
-                                    </span>
-                                );
-                            })()}
 
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <ThemeToggle />
                     {!isReadOnly && (
                         <button
                             onClick={() => setShowFinishModal(true)}
-                            className="p-2 theme-accent-green rounded-lg shadow-sm border-2"
+                            className="p-2 theme-accent-green rounded-lg shadow-sm border-2 active:scale-95 transition-transform"
                             title="Finish Round"
                         >
                             <CheckCircle size={20} />
                         </button>
                     )}
                     <button
-                        onClick={onShowScorecard}
+                        onClick={onMenuClick}
                         className="p-3 theme-btn-primary rounded-lg shadow-sm"
                     >
-                        <List size={24} />
+                        <Menu size={24} />
                     </button>
                 </div>
             </div>
 
             {/* Main Content - Scrollable */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+
+                {/* Distance & Map Bar */}
+                <div className="flex items-center justify-between mt-2 px-2">
+                    {(() => {
+                        const lastLocation = (() => {
+                            const shotsWithLoc = score.approachShotsDetails?.filter(s => s.location);
+                            if (shotsWithLoc && shotsWithLoc.length > 0) {
+                                return shotsWithLoc[shotsWithLoc.length - 1].location;
+                            }
+                            return score.teeLocation;
+                        })();
+
+                        const dist = (hole.greenCenter && lastLocation)
+                            ? calculateDistance(lastLocation, hole.greenCenter)
+                            : null;
+
+                        return (
+                            <div className="flex items-center">
+                                <span className="text-xs font-bold theme-text-secondary uppercase tracking-wider">To Green:</span>
+                                {dist !== null ? (
+                                    <span className="ml-2 text-lg font-black text-green-600 dark:text-green-400">{dist}y</span>
+                                ) : (
+                                    <span className="ml-2 text-xs font-bold text-gray-400">-</span>
+                                )}
+                            </div>
+                        );
+                    })()}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowHoleImage(true)}
+                            className="p-2 theme-btn-primary rounded-lg shadow-sm active:scale-95 transition-transform"
+                            title="View Hole Map"
+                        >
+                            <ImageIcon size={20} />
+                        </button>
+                    </div>
+                </div>
 
                 {/* Total Score Display */}
                 <div className="flex flex-col items-center justify-center pt-2 pb-4">
@@ -190,16 +202,33 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 -
                             </button>
                             <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
-                            <button
-                                onClick={handleAddApproach}
-                                className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
-                                    ? 'theme-btn-approach border-current'
-                                    : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
-                                    }`}
-                                disabled={isReadOnly || !selectedClub || isLocating}
-                            >
-                                {isLocating ? <Loader2 className="animate-spin" size={24} /> : '+'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && (
+                                    <button
+                                        onClick={() => setIsRepresentative(!isRepresentative)}
+                                        className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${isRepresentative
+                                            ? 'bg-green-100 border-green-500 text-green-700'
+                                            : 'bg-gray-50 border-gray-300 text-gray-400'
+                                            }`}
+                                        title={isRepresentative ? 'Representative shot for stats' : 'Exclude from stats (Bad shot / Recovery)'}
+                                    >
+                                        <BarChart2 size={20} className={isRepresentative ? '' : 'opacity-40'} />
+                                        <span className="text-[8px] font-black mt-0.5 tracking-tighter leading-none">
+                                            {isRepresentative ? 'STATS' : 'NO STATS'}
+                                        </span>
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleAddApproach}
+                                    className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
+                                        ? 'theme-btn-approach border-current'
+                                        : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
+                                        }`}
+                                    disabled={isReadOnly || !selectedClub || isLocating}
+                                >
+                                    {isLocating ? <Loader2 className="animate-spin" size={24} /> : '+'}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Club Selection Grid */}
@@ -301,6 +330,28 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 }}
                 onCancel={() => setShowFinishModal(false)}
             />
+
+            {/* Hole Image Modal */}
+            {showHoleImage && (
+                <div className="fixed inset-0 z-50 flex flex-col bg-black/95 animate-fade-in">
+                    <div className="flex justify-end p-4 shrink-0">
+                        <button
+                            onClick={() => setShowHoleImage(false)}
+                            className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+                        <img
+                            src={`/fields/CdeC/hoyo-${hole.number}.jpg`}
+                            alt={`Hole ${hole.number} Map`}
+                            className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

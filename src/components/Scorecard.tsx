@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { Hole, HoleScore } from '../types';
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
+import { ArrowLeft, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore } from '../utils/score';
 
@@ -9,9 +8,10 @@ interface ScorecardProps {
     course: Hole[];
     scores: Record<number, HoleScore>;
     onBack: () => void;
+    onMenuClick: () => void;
 }
 
-export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) => {
+export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
 
     const totalShots = Object.values(scores).reduce((acc, score) => acc + score.approachShots + score.putts, 0);
@@ -49,7 +49,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack }) 
                     </button>
                     <h1 className="text-2xl font-bold">Scorecard</h1>
                 </div>
-                <ThemeToggle />
+                <button
+                    onClick={onMenuClick}
+                    className="p-3 theme-btn-primary rounded-lg shadow-sm"
+                >
+                    <Menu size={24} />
+                </button>
                 {/* Version indicator */}
                 <span className="absolute top-2 right-2 text-[10px] theme-text-tertiary font-mono">
                     v{APP_VERSION}

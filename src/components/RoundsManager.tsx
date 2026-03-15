@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import type { RoundMetadata } from '../types';
-import { Plus, Trash2, Eye, Calendar } from 'lucide-react';
+import { Plus, Trash2, Eye, Calendar, Menu } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
-import { ThemeToggle } from './ThemeToggle';
 import { APP_VERSION } from '../constants/version';
 
 interface RoundsManagerProps {
@@ -12,6 +11,7 @@ interface RoundsManagerProps {
     onDeleteRound: (roundId: string) => void;
     onSyncRound: (roundId: string) => Promise<void>;
     isLoading?: boolean;
+    onMenuClick: () => void;
 }
 
 export const RoundsManager: React.FC<RoundsManagerProps> = ({
@@ -21,6 +21,7 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
     onDeleteRound,
     onSyncRound,
     isLoading = false,
+    onMenuClick,
 }) => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [roundToDelete, setRoundToDelete] = useState<{ id: string; date: Date } | null>(null);
@@ -60,7 +61,12 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                         <h1 className="text-3xl font-black">Golf Rounds</h1>
                         <p className="text-sm theme-text-secondary mt-1">Manage your golf game history</p>
                     </div>
-                    <ThemeToggle />
+                    <button
+                        onClick={onMenuClick}
+                        className="p-3 theme-btn-primary rounded-lg shadow-sm"
+                    >
+                        <Menu size={24} />
+                    </button>
                 </div>
                 {/* Version indicator */}
                 <span className="absolute top-2 right-2 text-[10px] theme-text-tertiary font-mono">

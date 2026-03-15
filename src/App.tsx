@@ -10,10 +10,9 @@ import { StartingHoleModal } from './components/StartingHoleModal';
 import { saveRoundToGoogleSheets, fetchRoundsFromGoogleSheets, deleteRoundFromGoogleSheets } from './services/googleSheetsService';
 import { calculateDistance } from './utils/geo';
 import { calculateRelativeScore } from './utils/score';
+import { AppMenu } from './components/AppMenu';
 
 const STORAGE_KEY = 'golf-app-rounds';
-// ... (keep ensureTeeLocation and App component start) ...
-
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
   if (!round) return undefined;
 
@@ -48,6 +47,39 @@ const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round |
   return round;
 };
 
+const Splash = () => {
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white animate-fade-in">
+      <div className="relative w-48 h-48 mb-8 animate-scale-in">
+        {/* Decorative background glow */}
+        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full scale-150"></div>
+
+        {/* Icon Container */}
+        <div className="relative w-full h-full rounded-[40px] overflow-hidden shadow-2xl border-4 border-white/50">
+          <img
+            src="/icon.png"
+            alt="Golf App"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      {/* App Name */}
+      <h1 className="text-4xl font-black theme-text-accent-blue tracking-tighter mb-2">
+        GOLF APP
+      </h1>
+      <p className="text-sm font-bold theme-text-tertiary uppercase tracking-widest animate-pulse">
+        Ready to play
+      </p>
+
+      {/* Loading Bar */}
+      <div className="mt-12 w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full bg-blue-600 rounded-full animate-loading-bar"></div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [view, setView] = useState<View>('rounds');
   const [rounds, setRounds] = useState<Round[]>([]);
@@ -55,11 +87,21 @@ function App() {
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
   const [showStartHoleModal, setShowStartHoleModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [showAppMenu, setShowAppMenu] = useState(false);
 
   // State for sync conflict handling
   const [syncConflictModalOpen, setSyncConflictModalOpen] = useState(false);
   const [pendingRemoteRounds, setPendingRemoteRounds] = useState<Round[]>([]);
   const [unsavedLocalRoundsCount, setUnsavedLocalRoundsCount] = useState(0);
+
+  // Splash timeout
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // State for Info Modal (Alert replacement)
   const [infoModalState, setInfoModalState] = useState<{
@@ -301,7 +343,7 @@ function App() {
 
 
   // Update score for current round
-  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation) => {
+  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean) => {
     if (!currentRoundId) return;
 
     const holeNumber = COURSE_DATA[currentHoleIndex].number;
@@ -346,7 +388,8 @@ function App() {
             club,
             timestamp: Date.now(),
             location,
-            distance
+            distance,
+            isRepresentative
           };
           newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
         } else if (delta < 0) {
@@ -449,8 +492,10 @@ function App() {
 
   return (
     <div className="min-h-screen w-full bg-white">
+      {showSplash && <Splash />}
       {view === 'rounds' ? (
         <RoundsManager
+          onMenuClick={() => setShowAppMenu(true)}
           rounds={getRoundsMetadata()}
           onCreateRound={handleCreateRoundRequest}
           onSelectRound={handleSelectRound}
@@ -472,13 +517,12 @@ function App() {
         />
       ) : view === 'play' ? (
         <HoleView
+          onMenuClick={() => setShowAppMenu(true)}
           hole={currentHole}
           score={currentScore}
           onUpdateScore={handleUpdateScore}
           onNext={handleNext}
           onPrev={handlePrev}
-          onShowScorecard={() => setView('scorecard')}
-          onBackToRounds={() => setView('rounds')}
           onFinishRound={handleFinishRound}
           isFirst={isFirst}
           isLast={isLast}
@@ -487,11 +531,18 @@ function App() {
         />
       ) : (
         <Scorecard
+          onMenuClick={() => setShowAppMenu(true)}
           course={COURSE_DATA}
           scores={currentRound?.scores || {}}
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
         />
       )}
+
+      <AppMenu
+        isOpen={showAppMenu}
+        onClose={() => setShowAppMenu(false)}
+        onNavigateToRounds={() => setView('rounds')}
+      />
 
       <StartingHoleModal
         isOpen={showStartHoleModal}

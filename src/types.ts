@@ -26,6 +26,7 @@ export interface ShotDetail {
   location?: GeoLocation;
   timestamp: number;
   distance?: number; // Distance achieved in yards
+  isRepresentative?: boolean; // true if the shot should be included in statistics
 }
 
 export interface HoleScore {
