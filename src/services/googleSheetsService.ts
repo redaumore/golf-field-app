@@ -190,3 +190,47 @@ export const deleteDrivingSessionFromGoogleSheets = async (id: string): Promise<
         throw error;
     }
 };
+
+export const fetchDrivingSessionsFromGoogleSheets = async (): Promise<import('../types').DrivingSession[]> => {
+    try {
+        // Add cache buster and action param to fetch driving sessions
+        const url = `${GOOGLE_SHEETS_API_URL}?action=get_driving_sessions&t=${Date.now()}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            redirect: 'follow'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Raw driving sessions from Google Sheets:', data);
+
+        // The script returns { sessions: [...] }
+        const sessionsData: any[] = Array.isArray(data) ? data : (data.sessions || []);
+        console.log(`Parsed ${sessionsData.length} driving sessions from Google Sheets`);
+
+        return sessionsData.map((item: any) => {
+            // Parse shots — stored as JSON string in the sheet
+            let shots = [];
+            if (typeof item.shots === 'string' && item.shots) {
+                try { shots = JSON.parse(item.shots); } catch (_) { shots = []; }
+            } else if (Array.isArray(item.shots)) {
+                shots = item.shots;
+            }
+
+            return {
+                id: String(item.id).replace(/^'/, ''), // strip leading apostrophe if present
+                date: new Date(item.date),
+                club: item.club as import('../types').DrivingSession['club'],
+                shots,
+                isFinished: true
+            };
+        });
+    } catch (error) {
+        console.error('Error fetching driving sessions from Google Sheets:', error);
+        throw error;
+    }
+};

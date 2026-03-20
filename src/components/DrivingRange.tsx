@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Plus, Save, RotateCcw, Trash2 } from 'lucide-react';
 import type { DrivingSession, DrivingShot } from '../types';
-import { saveDrivingSessionToGoogleSheets, deleteDrivingSessionFromGoogleSheets } from '../services/googleSheetsService';
+import { saveDrivingSessionToGoogleSheets, deleteDrivingSessionFromGoogleSheets, fetchDrivingSessionsFromGoogleSheets } from '../services/googleSheetsService';
 import { ConfirmModal } from './ConfirmModal';
 
 interface DrivingRangeProps {
@@ -12,6 +12,7 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
     const [session, setSession] = useState<DrivingSession | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [sessions, setSessions] = useState<DrivingSession[]>([]);
+    const [isLoadingSessions, setIsLoadingSessions] = useState(true);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
     const [alertMessage, setAlertMessage] = useState<{title: string, message: string, type: 'success' | 'error'} | null>(null);
@@ -25,23 +26,67 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
         setShowDiscardModal(false);
     };
 
-    // Try to load state from localStorage on mount
+    // Load sessions: merge remote (Google Sheets) with local (localStorage)
     useEffect(() => {
-        const saved = localStorage.getItem('golf-app-driving-sessions');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved).map((s: any) => ({
-                    ...s,
-                    date: new Date(s.date)
-                }));
-                // Find unfinished session
-                const active = parsed.find((s: DrivingSession) => !s.isFinished);
-                if (active) setSession(active);
-                setSessions(parsed);
-            } catch (e) {
-                console.error(e);
+        const loadSessions = async () => {
+            setIsLoadingSessions(true);
+
+            // 1. Read local sessions first (for immediate UI and to preserve in-progress sessions)
+            let localSessions: DrivingSession[] = [];
+            const saved = localStorage.getItem('golf-app-driving-sessions');
+            if (saved) {
+                try {
+                    localSessions = JSON.parse(saved).map((s: any) => ({
+                        ...s,
+                        date: new Date(s.date)
+                    }));
+                } catch (e) {
+                    console.error('Error parsing local sessions:', e);
+                }
             }
-        }
+
+            // Restore any active (unfinished) session immediately
+            const activeLocal = localSessions.find((s: DrivingSession) => !s.isFinished);
+            if (activeLocal) setSession(activeLocal);
+            setSessions(localSessions);
+
+            // 2. Fetch remote sessions from Google Sheets
+            try {
+                const remoteSessions = await fetchDrivingSessionsFromGoogleSheets();
+
+                // 3. Merge: remote sessions are the source of truth for finished sessions.
+                // Keep any local unfinished session and merge with remote finished ones.
+                const localUnfinished = localSessions.filter((s: DrivingSession) => !s.isFinished);
+
+                // Build a map of remote sessions by id for fast lookup
+                const remoteMap = new Map(remoteSessions.map(s => [s.id, s]));
+
+                // Add any local finished sessions that don't exist remotely yet (e.g. pending sync)
+                const localFinishedNotInRemote = localSessions.filter(
+                    (s: DrivingSession) => s.isFinished && !remoteMap.has(s.id)
+                );
+
+                const merged = [...remoteSessions, ...localFinishedNotInRemote, ...localUnfinished];
+
+                // Deduplicate by id (just in case)
+                const seen = new Set<string>();
+                const deduped = merged.filter(s => {
+                    if (seen.has(s.id)) return false;
+                    seen.add(s.id);
+                    return true;
+                });
+
+                setSessions(deduped);
+                saveToLocal(deduped);
+            } catch (error) {
+                console.error('Could not fetch sessions from Google Sheets, using local data only:', error);
+                // Keep local sessions — already set above
+            } finally {
+                setIsLoadingSessions(false);
+            }
+        };
+
+        loadSessions();
     }, []);
 
     const saveToLocal = (newSessions: DrivingSession[]) => {
@@ -145,8 +190,8 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
 
     if (!session) {
         return (
-            <div className="flex flex-col h-screen theme-bg-primary theme-text-primary p-4 animate-fade-in relative">
-                <div className="flex justify-between items-center top-0 pt-4 pb-2 z-10 sticky theme-bg-primary">
+            <div className="flex flex-col h-screen overflow-hidden theme-bg-primary theme-text-primary animate-fade-in relative">
+                <div className="flex justify-between items-center top-0 p-4 z-10 sticky theme-bg-primary">
                     <div className="flex flex-col">
                         <h1 className="text-3xl font-black">Driving Range</h1>
                         <p className="text-sm theme-text-secondary mt-1">Track your shot direction</p>
@@ -156,7 +201,7 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                     </button>
                 </div>
                 
-                <div className="flex-1 flex flex-col items-center justify-center p-6">
+                <div className="flex-1 overflow-y-auto flex flex-col items-center p-6">
                     <div className="w-full max-w-sm mb-8">
                         <h2 className="text-xl font-bold mb-4 text-center">Start New Session</h2>
                         <div className="grid grid-cols-2 gap-3">
@@ -175,7 +220,15 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                     
                     <div className="mt-8 w-full max-w-sm">
                         <h3 className="font-bold mb-4">Recent Sessions</h3>
-                        {sessions.filter(s => s.isFinished).slice(-3).reverse().map(s => {
+                        {isLoadingSessions ? (
+                            <div className="flex flex-col items-center justify-center py-6 theme-text-secondary">
+                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                <p className="text-sm font-semibold animate-pulse">Syncing sessions...</p>
+                            </div>
+                        ) : sessions.filter(s => s.isFinished).length === 0 ? (
+                            <p className="text-sm theme-text-secondary text-center py-4">No sessions recorded yet.</p>
+                        ) : null}
+                        {!isLoadingSessions && [...sessions].filter(s => s.isFinished).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(s => {
                             const sessionTotal = s.shots.length;
                             const successful = s.shots.filter(shot => shot.direction === 'center').length;
                             const acceptable = s.shots.filter(shot => shot.direction === 'left' || shot.direction === 'right').length;
