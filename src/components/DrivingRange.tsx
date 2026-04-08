@@ -13,9 +13,14 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [sessions, setSessions] = useState<DrivingSession[]>([]);
     const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [currentDayIndex, setCurrentDayIndex] = useState(0);
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
     const [alertMessage, setAlertMessage] = useState<{title: string, message: string, type: 'success' | 'error'} | null>(null);
+
+    const PAGE_SIZE = 20;
 
     const handleDiscardSession = () => {
         if (!session) return;
@@ -50,25 +55,24 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
             if (activeLocal) setSession(activeLocal);
             setSessions(localSessions);
 
-            // 2. Fetch remote sessions from Google Sheets
+            // 2. Fetch remote sessions from Google Sheets (initial batch)
             try {
-                const remoteSessions = await fetchDrivingSessionsFromGoogleSheets();
+                const remoteBatch = await fetchDrivingSessionsFromGoogleSheets(PAGE_SIZE, 0);
+                
+                if (remoteBatch.length < PAGE_SIZE) {
+                    setHasMore(false);
+                }
 
                 // 3. Merge: remote sessions are the source of truth for finished sessions.
-                // Keep any local unfinished session and merge with remote finished ones.
                 const localUnfinished = localSessions.filter((s: DrivingSession) => !s.isFinished);
-
-                // Build a map of remote sessions by id for fast lookup
-                const remoteMap = new Map(remoteSessions.map(s => [s.id, s]));
-
-                // Add any local finished sessions that don't exist remotely yet (e.g. pending sync)
+                const remoteMap = new Map(remoteBatch.map(s => [s.id, s]));
+                
+                // Add any local finished sessions that don't exist remotely yet
                 const localFinishedNotInRemote = localSessions.filter(
                     (s: DrivingSession) => s.isFinished && !remoteMap.has(s.id)
                 );
 
-                const merged = [...remoteSessions, ...localFinishedNotInRemote, ...localUnfinished];
-
-                // Deduplicate by id (just in case)
+                const merged = [...remoteBatch, ...localFinishedNotInRemote, ...localUnfinished];
                 const seen = new Set<string>();
                 const deduped = merged.filter(s => {
                     if (seen.has(s.id)) return false;
@@ -80,7 +84,6 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                 saveToLocal(deduped);
             } catch (error) {
                 console.error('Could not fetch sessions from Google Sheets, using local data only:', error);
-                // Keep local sessions — already set above
             } finally {
                 setIsLoadingSessions(false);
             }
@@ -88,6 +91,152 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
 
         loadSessions();
     }, []);
+
+    const handleLoadMore = async (): Promise<DrivingSession[]> => {
+        if (isLoadingMore || !hasMore) return sessions;
+        
+        setIsLoadingMore(true);
+        try {
+            // Actually, the IDs in Google Sheets are whatever they were saved as.
+            // Let's just use the current count of finished sessions as a hint for offset.
+            const finishedCount = sessions.filter(s => s.isFinished).length;
+            
+            const nextBatch = await fetchDrivingSessionsFromGoogleSheets(PAGE_SIZE, finishedCount);
+            
+            if (nextBatch.length < PAGE_SIZE) {
+                setHasMore(false);
+            }
+
+            if (nextBatch.length > 0) {
+                const updatedSessions = [...sessions, ...nextBatch];
+                const seen = new Set<string>();
+                const deduped = updatedSessions.filter(s => {
+                    if (seen.has(s.id)) return false;
+                    seen.add(s.id);
+                    return true;
+                });
+                setSessions(deduped);
+                return deduped;
+            }
+            return sessions;
+        } catch (error) {
+            console.error('Error loading more sessions:', error);
+            return sessions;
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
+    const groupSessionsByDay = (sessions: DrivingSession[]) => {
+        const finishedSessions = sessions.filter(s => s.isFinished);
+        const groups: { [key: string]: DrivingSession[] } = {};
+        
+        finishedSessions.forEach(s => {
+            const date = new Date(s.date);
+            const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(s);
+        });
+        
+        const sortedGroups = Object.entries(groups)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([date, groupSessions]) => ({
+                date,
+                sessions: groupSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            }));
+            
+        return sortedGroups;
+    };
+
+    const groupedData = groupSessionsByDay(sessions);
+    const currentDayGroup = groupedData[currentDayIndex];
+
+    const handleNextDay = () => {
+        if (currentDayIndex > 0) {
+            setCurrentDayIndex(currentDayIndex - 1);
+        }
+    };
+
+    const handlePrevDay = async () => {
+        if (currentDayIndex < groupedData.length - 1) {
+            setCurrentDayIndex(currentDayIndex + 1);
+        } else if (hasMore) {
+            // Need to load more to see if there's another day
+            const updated = await handleLoadMore();
+            const newGrouped = groupSessionsByDay(updated);
+            if (newGrouped.length > groupedData.length) {
+                setCurrentDayIndex(currentDayIndex + 1);
+            }
+        }
+    };
+
+    const handleFirstDay = () => {
+        setCurrentDayIndex(0);
+    };
+
+    const handleLastDay = async () => {
+        if (!hasMore) {
+            setCurrentDayIndex(groupedData.length - 1);
+            return;
+        }
+
+        setIsLoadingMore(true);
+        try {
+            let currentSessions = [...sessions];
+            let moreData = true;
+            // Use the number of remote sessions we currently have as the base offset
+            // remoteBatch in useEffect had PAGE_SIZE, so we start from there if we have it
+            let remoteOffset = currentSessions.filter(s => s.isFinished).length;
+            let iterations = 0;
+            const MAX_ITERATIONS = 50; // Safety circuit breaker
+
+            while (moreData && iterations < MAX_ITERATIONS) {
+                iterations++;
+                const nextBatch = await fetchDrivingSessionsFromGoogleSheets(PAGE_SIZE, remoteOffset);
+                
+                if (nextBatch.length === 0 || nextBatch.length < PAGE_SIZE) {
+                    moreData = false;
+                }
+                
+                if (nextBatch.length > 0) {
+                    remoteOffset += nextBatch.length;
+                    
+                    const merged = [...currentSessions, ...nextBatch];
+                    const seen = new Set<string>();
+                    currentSessions = merged.filter(s => {
+                        if (seen.has(s.id)) return false;
+                        seen.add(s.id);
+                        return true;
+                    });
+                } else {
+                    break;
+                }
+            }
+            
+            setSessions(currentSessions);
+            setHasMore(false);
+            const newGrouped = groupSessionsByDay(currentSessions);
+            setCurrentDayIndex(Math.max(0, newGrouped.length - 1));
+        } catch (e) {
+            console.error('Error in handleLastDay:', e);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
+    const formatHeaderDate = (dateString: string) => {
+        const date = new Date(dateString + 'T12:00:00'); // Use noon to avoid timezone shifts
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return 'Today';
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+        
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
 
     const saveToLocal = (newSessions: DrivingSession[]) => {
         localStorage.setItem('golf-app-driving-sessions', JSON.stringify(newSessions));
@@ -221,62 +370,138 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                     <div className="mt-8 w-full max-w-sm">
                         <h3 className="font-bold mb-4">Recent Sessions</h3>
                         {isLoadingSessions ? (
-                            <div className="flex flex-col items-center justify-center py-6 theme-text-secondary">
-                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                                <p className="text-sm font-semibold animate-pulse">Syncing sessions...</p>
+                            <div className="flex flex-col items-center justify-center py-12 theme-text-secondary">
+                                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p className="text-sm font-semibold animate-pulse">Syncing practice history...</p>
                             </div>
                         ) : sessions.filter(s => s.isFinished).length === 0 ? (
-                            <p className="text-sm theme-text-secondary text-center py-4">No sessions recorded yet.</p>
-                        ) : null}
-                        {!isLoadingSessions && [...sessions].filter(s => s.isFinished).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(s => {
-                            const sessionTotal = s.shots.length;
-                            const successful = s.shots.filter(shot => shot.direction === 'center').length;
-                            const acceptable = s.shots.filter(shot => shot.direction === 'left' || shot.direction === 'right').length;
-                            const missed = s.shots.filter(shot => shot.direction === 'far-left' || shot.direction === 'far-right').length;
-                            
-                            const successfulPct = sessionTotal > 0 ? Math.round((successful / sessionTotal) * 100) : 0;
-                            const acceptablePct = sessionTotal > 0 ? Math.round((acceptable / sessionTotal) * 100) : 0;
-                            const missedPct = sessionTotal > 0 ? Math.round((missed / sessionTotal) * 100) : 0;
-
-                            return (
-                                <div key={s.id} className="p-4 border rounded-xl mb-3 theme-border theme-bg-secondary group">
-                                    <div className="flex justify-between items-center font-bold mb-1">
-                                        <span>{new Date(s.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-                                        <div className="flex items-center gap-2">
-                                            <span>{sessionTotal} shots</span>
-                                            <button 
-                                                onClick={() => setSessionToDelete(s.id)}
-                                                className="p-1.5 theme-btn-primary text-red-500 dark:text-red-400 rounded-lg shadow-sm transition-colors active:scale-95"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                            <p className="text-sm theme-text-secondary text-center py-8">No sessions recorded yet.</p>
+                        ) : (
+                            <div className="w-full flex flex-col items-center">
+                                {/* Navigation Controls */}
+                                <div className="flex items-center justify-between w-full mb-6 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-2xl border theme-border shadow-sm">
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={handleFirstDay}
+                                            disabled={currentDayIndex === 0}
+                                            className="p-2.5 theme-btn-primary rounded-xl disabled:opacity-30 disabled:grayscale transition-all active:scale-90"
+                                            title="First (Most Recent)"
+                                        >
+                                            <span className="text-xs font-black">|◄</span>
+                                        </button>
+                                        <button 
+                                            onClick={handleNextDay}
+                                            disabled={currentDayIndex === 0}
+                                            className="p-2.5 theme-btn-primary rounded-xl disabled:opacity-30 disabled:grayscale transition-all active:scale-90"
+                                            title="Next (Newer)"
+                                        >
+                                            <span className="text-xs font-black">◄</span>
+                                        </button>
                                     </div>
-                                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400 mb-3">{s.club}</div>
-                                    
-                                    {sessionTotal > 0 && (
-                                        <>
-                                            <div className="flex w-full h-2 rounded-full overflow-hidden mb-2 gap-0.5">
-                                                {successfulPct > 0 && <div className="bg-green-500 h-full" style={{ width: `${successfulPct}%` }}></div>}
-                                                {acceptablePct > 0 && <div className="bg-yellow-400 h-full" style={{ width: `${acceptablePct}%` }}></div>}
-                                                {missedPct > 0 && <div className="bg-red-500 h-full" style={{ width: `${missedPct}%` }}></div>}
-                                            </div>
-                                            <div className="flex justify-between text-xs font-bold mt-1">
-                                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                                    <span>✓</span> {successfulPct}%
-                                                </div>
-                                                <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
-                                                    <span>~</span> {acceptablePct}%
-                                                </div>
-                                                <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                                    <span>✕</span> {missedPct}%
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
+
+                                    <div className="flex flex-col items-center px-2">
+                                        <span className="text-[10px] font-black uppercase tracking-tighter text-blue-600 dark:text-blue-400">
+                                            {formatHeaderDate(currentDayGroup.date)}
+                                        </span>
+                                        <span className="text-[9px] font-bold theme-text-secondary">
+                                            {currentDayIndex + 1} of {groupedData.length}{hasMore ? '+' : ''}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={handlePrevDay}
+                                            disabled={currentDayIndex === groupedData.length - 1 && !hasMore}
+                                            className="p-2.5 theme-btn-primary rounded-xl disabled:opacity-30 disabled:grayscale transition-all active:scale-90"
+                                            title="Previous (Older)"
+                                        >
+                                            <span className="text-xs font-black">►</span>
+                                        </button>
+                                        <button 
+                                            onClick={handleLastDay}
+                                            disabled={!hasMore && currentDayIndex === groupedData.length - 1}
+                                            className="p-2.5 theme-btn-primary rounded-xl disabled:opacity-30 disabled:grayscale transition-all active:scale-90"
+                                            title="Last (Oldest)"
+                                        >
+                                            <span className="text-xs font-black">►|</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            );
-                        })}
+
+                                {/* Current Day Sessions */}
+                                <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    {currentDayGroup.sessions.map(s => {
+                                        const sessionTotal = s.shots.length;
+                                        const successful = s.shots.filter(shot => shot.direction === 'center').length;
+                                        const acceptable = s.shots.filter(shot => shot.direction === 'left' || shot.direction === 'right').length;
+                                        const missed = s.shots.filter(shot => shot.direction === 'far-left' || shot.direction === 'far-right').length;
+                                        
+                                        const successfulPct = sessionTotal > 0 ? Math.round((successful / sessionTotal) * 100) : 0;
+                                        const acceptablePct = sessionTotal > 0 ? Math.round((acceptable / sessionTotal) * 100) : 0;
+                                        const missedPct = sessionTotal > 0 ? Math.round((missed / sessionTotal) * 100) : 0;
+
+                                        return (
+                                            <div key={s.id} className="p-4 border rounded-2xl mb-4 theme-border theme-bg-secondary group hover:border-blue-500/30 transition-all duration-300 shadow-sm hover:shadow-md relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-1">
+                                                    <button 
+                                                        onClick={() => setSessionToDelete(s.id)}
+                                                        className="p-2 text-red-500/50 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex flex-col mb-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight">{s.club}</span>
+                                                        <div className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                                                        <span className="text-sm font-bold theme-text-primary">
+                                                            {new Date(s.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[11px] font-bold theme-text-secondary tracking-wide">
+                                                        {sessionTotal} TOTAL SHOTS
+                                                    </span>
+                                                </div>
+                                                
+                                                {sessionTotal > 0 && (
+                                                    <div className="space-y-3">
+                                                        <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 p-0.5 border theme-border">
+                                                            {successfulPct > 0 && <div className="bg-green-500 h-full rounded-full" style={{ width: `${successfulPct}%` }}></div>}
+                                                            {acceptablePct > 0 && <div className="bg-yellow-400 h-full rounded-full" style={{ width: `${acceptablePct}%` }}></div>}
+                                                            {missedPct > 0 && <div className="bg-red-500 h-full rounded-full" style={{ width: `${missedPct}%` }}></div>}
+                                                        </div>
+                                                        <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900/40 p-2 rounded-xl border theme-border">
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-[10px] font-black text-green-600 dark:text-green-500 uppercase">Success</span>
+                                                                <span className="text-sm font-black">{successfulPct}%</span>
+                                                            </div>
+                                                            <div className="w-px h-6 bg-gray-200 dark:bg-gray-800"></div>
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-[10px] font-black text-yellow-600 dark:text-yellow-500 uppercase">Acceptable</span>
+                                                                <span className="text-sm font-black">{acceptablePct}%</span>
+                                                            </div>
+                                                            <div className="w-px h-6 bg-gray-200 dark:bg-gray-800"></div>
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="text-[10px] font-black text-red-600 dark:text-red-500 uppercase">Missed</span>
+                                                                <span className="text-sm font-black">{missedPct}%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                
+                                {isLoadingMore && (
+                                    <div className="flex items-center gap-2 py-4 theme-text-secondary animate-pulse">
+                                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-xs font-bold uppercase tracking-widest">Searching deep history...</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
                 <ConfirmModal

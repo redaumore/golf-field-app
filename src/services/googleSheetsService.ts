@@ -191,10 +191,12 @@ export const deleteDrivingSessionFromGoogleSheets = async (id: string): Promise<
     }
 };
 
-export const fetchDrivingSessionsFromGoogleSheets = async (): Promise<import('../types').DrivingSession[]> => {
+export const fetchDrivingSessionsFromGoogleSheets = async (limit?: number, offset?: number): Promise<import('../types').DrivingSession[]> => {
     try {
         // Add cache buster and action param to fetch driving sessions
-        const url = `${GOOGLE_SHEETS_API_URL}?action=get_driving_sessions&t=${Date.now()}`;
+        let url = `${GOOGLE_SHEETS_API_URL}?action=get_driving_sessions&t=${Date.now()}`;
+        if (limit !== undefined) url += `&limit=${limit}`;
+        if (offset !== undefined) url += `&offset=${offset}`;
 
         const response = await fetch(url, {
             method: 'GET',
