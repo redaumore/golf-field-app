@@ -19,6 +19,7 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
     const [showDiscardModal, setShowDiscardModal] = useState(false);
     const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
     const [alertMessage, setAlertMessage] = useState<{title: string, message: string, type: 'success' | 'error'} | null>(null);
+    const [isProcessingShot, setIsProcessingShot] = useState(false);
 
     const PAGE_SIZE = 20;
 
@@ -258,8 +259,9 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
     };
 
     const handleAddShot = (direction: DrivingShot['direction']) => {
-        if (!session) return;
+        if (!session || isProcessingShot) return;
         
+        setIsProcessingShot(true);
         const shot: DrivingShot = {
             id: `shot-${Date.now()}`,
             timestamp: Date.now(),
@@ -276,6 +278,9 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
         const newSessions = sessions.map(s => s.id === session.id ? updatedSession : s);
         setSessions(newSessions);
         saveToLocal(newSessions);
+
+        // Standard pause to prevent double clicks (500ms)
+        setTimeout(() => setIsProcessingShot(false), 500);
     };
 
     const handleUndoLast = () => {
@@ -503,6 +508,19 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                             </div>
                         )}
                     </div>
+
+                    {/* Footer / Safe Area Spacer */}
+                    <footer className="w-full max-w-sm mt-12 mb-8 flex flex-col items-center gap-4">
+                        <div className="w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+                        <div className="flex flex-col items-center text-center">
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                                Antigravity Golf
+                            </span>
+                            <span className="text-[9px] font-bold theme-text-secondary mt-1">
+                                Version 1.2.0 • Driving Assistant
+                            </span>
+                        </div>
+                    </footer>
                 </div>
                 <ConfirmModal
                     isOpen={!!sessionToDelete}
@@ -621,43 +639,48 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
                 <div className="flex flex-col gap-6 mt-4">
                     <p className="text-center font-bold text-gray-500 uppercase tracking-widest text-sm">Log Previous Shot</p>
                     
-                    <div className="flex justify-center items-center gap-2 h-48 px-2">
+                    <div className={`flex justify-center items-center gap-2 h-48 px-2 transition-opacity duration-200 ${isProcessingShot ? 'opacity-60' : 'opacity-100'}`}>
                         {/* Far Left - Red */}
                         <button 
                             onClick={() => handleAddShot('far-left')}
-                            className="flex-1 h-3/4 bg-red-400/80 active:bg-red-500 rounded-l-[50px] rounded-r-lg shadow-inner active:scale-95 transition-all text-white font-black text-lg"
+                            disabled={isProcessingShot}
+                            className="flex-1 h-3/4 bg-red-400/80 active:bg-red-500 rounded-l-[50px] rounded-r-lg shadow-inner active:scale-95 transition-all text-white font-black text-lg disabled:cursor-not-allowed"
                         >
                             {farLeft > 0 && farLeft}
                         </button>
-
+ 
                         {/* Left - Yellow */}
                         <button 
                             onClick={() => handleAddShot('left')}
-                            className="flex-1 h-5/6 bg-yellow-400/80 active:bg-yellow-500 rounded-xl shadow-inner active:scale-95 transition-all text-white font-black text-2xl"
+                            disabled={isProcessingShot}
+                            className="flex-1 h-5/6 bg-yellow-400/80 active:bg-yellow-500 rounded-xl shadow-inner active:scale-95 transition-all text-white font-black text-2xl disabled:cursor-not-allowed"
                         >
                             {left > 0 && left}
                         </button>
-
+ 
                         {/* Center - Green */}
                         <button 
                             onClick={() => handleAddShot('center')}
-                            className="w-24 h-full bg-green-500/90 active:bg-green-600 rounded-[50px] shadow-lg active:scale-95 transition-all text-white font-black text-4xl border-4 border-green-600/30"
+                            disabled={isProcessingShot}
+                            className="w-24 h-full bg-green-500/90 active:bg-green-600 rounded-[50px] shadow-lg active:scale-95 transition-all text-white font-black text-4xl border-4 border-green-600/30 disabled:cursor-not-allowed"
                         >
                             {center > 0 && center}
                         </button>
-
+ 
                         {/* Right - Yellow */}
                         <button 
                             onClick={() => handleAddShot('right')}
-                            className="flex-1 h-5/6 bg-yellow-400/80 active:bg-yellow-500 rounded-xl shadow-inner active:scale-95 transition-all text-white font-black text-2xl"
+                            disabled={isProcessingShot}
+                            className="flex-1 h-5/6 bg-yellow-400/80 active:bg-yellow-500 rounded-xl shadow-inner active:scale-95 transition-all text-white font-black text-2xl disabled:cursor-not-allowed"
                         >
                             {right > 0 && right}
                         </button>
-
+ 
                         {/* Far Right - Red */}
                         <button 
                             onClick={() => handleAddShot('far-right')}
-                            className="flex-1 h-3/4 bg-red-400/80 active:bg-red-500 rounded-r-[50px] rounded-l-lg shadow-inner active:scale-95 transition-all text-white font-black text-lg"
+                            disabled={isProcessingShot}
+                            className="flex-1 h-3/4 bg-red-400/80 active:bg-red-500 rounded-r-[50px] rounded-l-lg shadow-inner active:scale-95 transition-all text-white font-black text-lg disabled:cursor-not-allowed"
                         >
                             {farRight > 0 && farRight}
                         </button>
