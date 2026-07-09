@@ -68,3 +68,14 @@ export interface DrivingSession {
   shots: DrivingShot[];
   isFinished: boolean;
 }
+
+export interface ScoreDistribution {
+  eaglesOrBetter: number;
+  birdies: number;
+  pars: number;
+  bogeys: number;
+  doubleBogeys: number;
+  tripleBogeys: number;
+  otherBogeys: number;
+}
+

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import type { Hole, HoleScore } from '../types';
 import { ArrowLeft, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
-import { calculateRelativeScore } from '../utils/score';
+import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
+
 
 interface ScorecardProps {
     course: Hole[];
@@ -18,6 +19,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
     const playedHoles = course.filter(hole => scores[hole.number] && (scores[hole.number].approachShots + scores[hole.number].putts > 0));
     const totalPar = playedHoles.reduce((acc, hole) => acc + hole.par, 0);
     const relativeScore = calculateRelativeScore(course, scores);
+    const scoreDistribution = calculateScoreDistribution(course, scores);
+
+    const statItems = [
+        { label: 'Eagles/Mejor', count: scoreDistribution.eaglesOrBetter, colorClass: 'bg-amber-500', textClass: 'text-amber-600 dark:text-amber-400' },
+        { label: 'Birdies', count: scoreDistribution.birdies, colorClass: 'bg-rose-500', textClass: 'text-rose-600 dark:text-rose-400' },
+        { label: 'Pares', count: scoreDistribution.pars, colorClass: 'bg-emerald-500', textClass: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Bogeys', count: scoreDistribution.bogeys, colorClass: 'bg-slate-400', textClass: 'text-slate-600 dark:text-slate-400' },
+        { label: 'Doble Bogeys', count: scoreDistribution.doubleBogeys, colorClass: 'bg-indigo-500', textClass: 'text-indigo-600 dark:text-indigo-400' },
+        { label: 'Triple Bogeys', count: scoreDistribution.tripleBogeys, colorClass: 'bg-amber-800', textClass: 'text-amber-800 dark:text-amber-600' },
+        { label: 'Otros Bogeys', count: scoreDistribution.otherBogeys, colorClass: 'bg-zinc-600', textClass: 'text-zinc-600 dark:text-zinc-400' },
+    ];
+
 
     const getScoreForHole = (holeNumber: number) => {
         const score = scores[holeNumber];
@@ -80,6 +93,56 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                         </div>
                     </div>
                 </div>
+
+                {/* Panel de Estadísticas */}
+                {playedHoles.length > 0 && (
+                    <div className="mb-6 p-4 theme-card rounded-lg border-2 shadow-sm">
+                        <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
+                            Distribución de Scores
+                        </h3>
+
+                        {/* Barra de distribución horizontal segmentada */}
+                        <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex mb-4 shadow-inner">
+                            {statItems.map((item, idx) => {
+                                const percentage = (item.count / playedHoles.length) * 100;
+                                if (percentage === 0) return null;
+                                return (
+                                    <div
+                                        key={idx}
+                                        style={{ width: `${percentage}%` }}
+                                        className={`${item.colorClass} h-full transition-all duration-300`}
+                                        title={`${item.label}: ${item.count} (${Math.round(percentage)}%)`}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        {/* Detalle en Cuadrícula (Grid) */}
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {statItems.map((item, idx) => {
+                                const isZero = item.count === 0;
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`flex items-center justify-between p-2 rounded-xl border theme-border transition-all duration-200 ${
+                                            isZero
+                                                ? 'opacity-40 theme-bg-secondary'
+                                                : 'theme-bg-primary hover:scale-[1.02] shadow-sm hover:shadow-md'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className={`w-2 h-2 rounded-full shrink-0 ${item.colorClass}`} />
+                                            <span className="text-xs font-semibold theme-text-secondary truncate">{item.label}</span>
+                                        </div>
+                                        <span className={`text-xs font-black shrink-0 ${isZero ? 'theme-text-tertiary' : item.textClass}`}>
+                                            {item.count}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-3">
                     {course.map((hole) => {
