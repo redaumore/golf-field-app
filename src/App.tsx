@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { COURSE_DATA } from './data/course';
-import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail } from './types';
+import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail, GuestPlayer } from './types';
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
 import { RoundsManager } from './components/RoundsManager';
@@ -230,7 +230,7 @@ function App() {
   };
 
   // Create a new round with selected starting hole
-  const handleStartRoundConfirmed = (startingHole: number) => {
+  const handleStartRoundConfirmed = (startingHole: number, guests?: GuestPlayer[]) => {
     setShowStartHoleModal(false);
 
     const baseId = generateRoundId();
@@ -253,6 +253,7 @@ function App() {
       currentHoleIndex: startHoleIndex,
       startingHoleNumber: startingHole,
       isFinished: false,
+      guests: guests,
     };
 
     // Auto-set tee location for the first hole
@@ -410,6 +411,43 @@ function App() {
     }));
   };
 
+  // Update guest score for current round
+  const handleUpdateGuestScore = (guestId: string, type: 'approach' | 'putt', delta: number) => {
+    if (!currentRoundId) return;
+
+    const holeNumber = COURSE_DATA[currentHoleIndex].number;
+
+    setRounds(prev => prev.map(round => {
+      if (round.id !== currentRoundId || !round.guests) return round;
+
+      const updatedGuests = round.guests.map(guest => {
+        if (guest.id !== guestId) return guest;
+
+        const currentGuestScore = guest.scores[holeNumber] || { approachShots: 0, putts: 0 };
+        const newGuestScore = { ...currentGuestScore };
+
+        if (type === 'approach') {
+          newGuestScore.approachShots = Math.max(0, newGuestScore.approachShots + delta);
+        } else {
+          newGuestScore.putts = Math.max(0, newGuestScore.putts + delta);
+        }
+
+        return {
+          ...guest,
+          scores: {
+            ...guest.scores,
+            [holeNumber]: newGuestScore
+          }
+        };
+      });
+
+      return {
+        ...round,
+        guests: updatedGuests
+      };
+    }));
+  };
+
   // Navigate to next hole (Circular)
   const handleNext = () => {
     const nextIndex = (currentHoleIndex + 1) % COURSE_DATA.length;
@@ -529,12 +567,15 @@ function App() {
           isLast={isLast}
           isReadOnly={isCurrentRoundComplete}
           relativeScore={calculateRelativeScore(COURSE_DATA, currentRound?.scores || {})}
+          guests={currentRound?.guests}
+          onUpdateGuestScore={handleUpdateGuestScore}
         />
       ) : view === 'scorecard' ? (
         <Scorecard
           onMenuClick={() => setShowAppMenu(true)}
           course={COURSE_DATA}
           scores={currentRound?.scores || {}}
+          guests={currentRound?.guests}
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
         />
       ) : (

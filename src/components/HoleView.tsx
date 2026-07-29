@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Hole, HoleScore, GolfClub, GeoLocation } from '../types';
-import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu } from 'lucide-react';
+import type { Hole, HoleScore, GolfClub, GeoLocation, GuestPlayer } from '../types';
+import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu, Users } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { APP_VERSION } from '../constants/version';
 import { calculateDistance } from '../utils/geo';
@@ -18,6 +18,8 @@ interface HoleViewProps {
     isReadOnly?: boolean;
     relativeScore: number;
     onMenuClick: () => void;
+    guests?: GuestPlayer[];
+    onUpdateGuestScore?: (guestId: string, type: 'approach' | 'putt', delta: number) => void;
 }
 
 const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
@@ -34,6 +36,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
     isReadOnly = false,
     relativeScore,
     onMenuClick,
+    guests,
+    onUpdateGuestScore,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
@@ -282,6 +286,79 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* Guests Section */}
+                    {guests && guests.length > 0 && (
+                        <div className="space-y-4 pt-4 border-t theme-border">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-center theme-text-secondary flex items-center justify-center gap-2">
+                                <Users size={16} /> Scores de Invitados (Hoyo {hole.number})
+                            </h3>
+                            {guests.map((guest) => {
+                                const guestHoleScore = guest.scores[hole.number] || { approachShots: 0, putts: 0 };
+                                const guestTotal = guestHoleScore.approachShots + guestHoleScore.putts;
+                                return (
+                                    <div key={guest.id} className="theme-card rounded-2xl p-4 border-2 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-lg">{guest.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs theme-text-secondary uppercase font-semibold">Total</span>
+                                                <span className="text-xl font-black bg-blue-600 text-white px-3 py-0.5 rounded-full">
+                                                    {guestTotal}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Approach & Putts control */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {/* Guest Approach */}
+                                            <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border theme-border flex flex-col items-center">
+                                                <span className="text-xs font-semibold theme-text-secondary uppercase mb-1">Approach</span>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'approach', -1)}
+                                                        disabled={isReadOnly || guestHoleScore.approachShots <= 0}
+                                                        className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="text-2xl font-bold w-6 text-center">{guestHoleScore.approachShots}</span>
+                                                    <button
+                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'approach', 1)}
+                                                        disabled={isReadOnly}
+                                                        className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Guest Putts */}
+                                            <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border theme-border flex flex-col items-center">
+                                                <span className="text-xs font-semibold theme-text-secondary uppercase mb-1">Putts</span>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'putt', -1)}
+                                                        disabled={isReadOnly || guestHoleScore.putts <= 0}
+                                                        className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="text-2xl font-bold w-6 text-center">{guestHoleScore.putts}</span>
+                                                    <button
+                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'putt', 1)}
+                                                        disabled={isReadOnly}
+                                                        className="w-10 h-10 rounded-full bg-green-600 text-white font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 

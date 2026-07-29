@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Hole, HoleScore } from '../types';
-import { ArrowLeft, ChevronDown, ChevronUp, Menu } from 'lucide-react';
+import type { Hole, HoleScore, GuestPlayer } from '../types';
+import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
 
@@ -10,9 +10,10 @@ interface ScorecardProps {
     scores: Record<number, HoleScore>;
     onBack: () => void;
     onMenuClick: () => void;
+    guests?: GuestPlayer[];
 }
 
-export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick }) => {
+export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
 
     const totalShots = Object.values(scores).reduce((acc, score) => acc + score.approachShots + score.putts, 0);
@@ -76,29 +77,74 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
-                <div className="mb-6 p-4 theme-card-approach rounded-lg border-2">
-                    <div className="flex justify-around items-center">
-                        <div className="text-center">
-                            <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total</div>
-                            <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
-                            <div className="text-xs theme-text-approach opacity-75">Par {totalPar}</div>
+
+                {/* Summary Banner for Main Player and Guests */}
+                <div className="mb-6 space-y-3">
+                    {/* Main player summary */}
+                    <div className="p-4 theme-card-approach rounded-lg border-2">
+                        <div className="text-xs font-bold uppercase tracking-wider mb-2 text-center theme-text-approach">
+                            Jugador Principal
                         </div>
-                        <div className="w-px h-12 bg-blue-200 opacity-50"></div>
-                        <div className="text-center">
-                            <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">To Par</div>
-                            <div className={`text-4xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
-                                }`}>
-                                {relativeScore > 0 ? `+${relativeScore}` : relativeScore === 0 ? 'E' : relativeScore}
+                        <div className="flex justify-around items-center">
+                            <div className="text-center">
+                                <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total</div>
+                                <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
+                                <div className="text-xs theme-text-approach opacity-75">Par {totalPar}</div>
+                            </div>
+                            <div className="w-px h-12 bg-blue-200 opacity-50"></div>
+                            <div className="text-center">
+                                <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">To Par</div>
+                                <div className={`text-4xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
+                                    }`}>
+                                    {relativeScore > 0 ? `+${relativeScore}` : relativeScore === 0 ? 'E' : relativeScore}
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Guest player summary cards */}
+                    {guests && guests.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {guests.map((guest) => {
+                                const guestTotalShots = Object.values(guest.scores).reduce((acc, s) => acc + s.approachShots + s.putts, 0);
+                                const guestPlayedHoles = course.filter(h => guest.scores[h.number] && (guest.scores[h.number].approachShots + guest.scores[h.number].putts > 0));
+                                const guestTotalPar = guestPlayedHoles.reduce((acc, h) => acc + h.par, 0);
+                                const guestRel = guestTotalShots - guestTotalPar;
+
+                                return (
+                                    <div key={guest.id} className="p-3 theme-card rounded-lg border-2 shadow-sm flex items-center justify-between">
+                                        <div>
+                                            <div className="text-xs font-bold uppercase theme-text-secondary flex items-center gap-1.5">
+                                                <Users size={14} /> {guest.name}
+                                            </div>
+                                            <div className="text-xs theme-text-tertiary">
+                                                Par {guestTotalPar} ({guestPlayedHoles.length} hoyos)
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 text-right">
+                                            <div>
+                                                <div className="text-xs theme-text-secondary font-semibold">Total</div>
+                                                <div className="text-2xl font-black">{guestTotalShots}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs theme-text-secondary font-semibold">To Par</div>
+                                                <div className={`text-2xl font-black ${guestRel === 0 ? 'theme-text-accent-blue' : guestRel < 0 ? 'theme-text-accent-red' : 'theme-text-primary'}`}>
+                                                    {guestRel > 0 ? `+${guestRel}` : guestRel === 0 ? 'E' : guestRel}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Panel de Estadísticas */}
                 {playedHoles.length > 0 && (
                     <div className="mb-6 p-4 theme-card rounded-lg border-2 shadow-sm">
                         <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
-                            Distribución de Scores
+                            Distribución de Scores (Jugador Principal)
                         </h3>
 
                         {/* Barra de distribución horizontal segmentada */}
@@ -186,51 +232,84 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                         )}
                                     </div>
 
-                                    {/* Right: Total Score */}
-                                    <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total)}`}>
-                                        {display}
+                                    {/* Right: Total Score Main Player + Guest quick view */}
+                                    <div className="flex items-center gap-2">
+                                        <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total)}`}>
+                                            {display}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Expanded Details */}
-                                {isExpanded && score && (
-                                    <div className="theme-bg-secondary border-t theme-border p-3 text-sm animate-in slide-in-from-top-2 duration-200">
-
-                                        {/* Shot Details Table */}
-                                        {score.approachShotsDetails && score.approachShotsDetails.length > 0 ? (
+                                {isExpanded && (
+                                    <div className="theme-bg-secondary border-t theme-border p-3 text-sm animate-in slide-in-from-top-2 duration-200 space-y-3">
+                                        {/* Main Player Details */}
+                                        {score && (
                                             <div>
-                                                <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary mb-2 px-2">
-                                                    <span>Club</span>
-                                                    <span className="text-center">Distance</span>
-                                                    <span className="text-right">Time</span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {score.approachShotsDetails.map((shot, idx) => (
-                                                        <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-md theme-bg-primary theme-border border">
-                                                            <span className="font-bold theme-text-primary">{shot.club}</span>
-                                                            <span className="text-center theme-text-secondary font-mono">
-                                                                {shot.distance ? `${shot.distance}y` : '-'}
-                                                            </span>
-                                                            <span className="text-right theme-text-tertiary text-[10px]">
-                                                                {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                            </span>
+                                                <div className="text-xs font-bold theme-text-primary mb-1">Jugador Principal</div>
+                                                {score.approachShotsDetails && score.approachShotsDetails.length > 0 ? (
+                                                    <div>
+                                                        <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary mb-2 px-2">
+                                                            <span>Club</span>
+                                                            <span className="text-center">Distance</span>
+                                                            <span className="text-right">Time</span>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center text-xs theme-text-tertiary py-2 italic">
-                                                No shot details recorded
+                                                        <div className="space-y-1">
+                                                            {score.approachShotsDetails.map((shot, idx) => (
+                                                                <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-md theme-bg-primary theme-border border">
+                                                                    <span className="font-bold theme-text-primary">{shot.club}</span>
+                                                                    <span className="text-center theme-text-secondary font-mono">
+                                                                        {shot.distance ? `${shot.distance}y` : '-'}
+                                                                    </span>
+                                                                    <span className="text-right theme-text-tertiary text-[10px]">
+                                                                        {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs theme-text-tertiary italic">
+                                                        No shot details recorded
+                                                    </div>
+                                                )}
+
+                                                {/* Tee Info */}
+                                                {score.teeLocation && (
+                                                    <div className="mt-2 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
+                                                        <span>Tee Location Set</span>
+                                                        <span className="font-mono">
+                                                            {score.teeLocation.latitude.toFixed(5)}, {score.teeLocation.longitude.toFixed(5)}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
 
-                                        {/* Tee Info */}
-                                        {score.teeLocation && (
-                                            <div className="mt-3 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
-                                                <span>Tee Location Set</span>
-                                                <span className="font-mono">
-                                                    {score.teeLocation.latitude.toFixed(5)}, {score.teeLocation.longitude.toFixed(5)}
-                                                </span>
+                                        {/* Guest Hole Scores */}
+                                        {guests && guests.length > 0 && (
+                                            <div className="pt-2 border-t theme-border">
+                                                <div className="text-xs font-bold theme-text-primary mb-2 flex items-center gap-1.5">
+                                                    <Users size={14} /> Invitados
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {guests.map((g) => {
+                                                        const gScore = g.scores[hole.number];
+                                                        const gTotal = gScore ? gScore.approachShots + gScore.putts : 0;
+                                                        return (
+                                                            <div key={g.id} className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
+                                                                <span className="font-semibold">{g.name}</span>
+                                                                {gScore ? (
+                                                                    <span className="theme-text-secondary">
+                                                                        {gTotal} golpes (App: {gScore.approachShots}, Putt: {gScore.putts})
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="theme-text-tertiary italic">-</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         )}
                                     </div>

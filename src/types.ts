@@ -37,6 +37,17 @@ export interface HoleScore {
   teeLocation?: GeoLocation;
 }
 
+export interface GuestScore {
+  approachShots: number;
+  putts: number;
+}
+
+export interface GuestPlayer {
+  id: string;
+  name: string;
+  scores: Record<number, GuestScore>;
+}
+
 export interface Round {
   id: string; // formato: dd-mm-yyyy
   date: Date;
@@ -44,6 +55,7 @@ export interface Round {
   currentHoleIndex: number;
   startingHoleNumber?: number; // Hoyo inicial de la ronda (1-18)
   isFinished: boolean; // Marca si el jugador finalizó manualmente la rueda
+  guests?: GuestPlayer[];
 }
 
 export interface RoundMetadata {

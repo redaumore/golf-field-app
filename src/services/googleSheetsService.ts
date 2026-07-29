@@ -6,6 +6,7 @@ interface SheetPayload {
     date: string;
     totalScore: number;
     scores: Record<string, unknown>;
+    guests?: unknown;
 }
 
 export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
@@ -20,7 +21,8 @@ export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
         id: round.id,
         date: new Date(round.date).toISOString(),
         totalScore,
-        scores: round.scores
+        scores: round.scores,
+        guests: round.guests
     };
 
     try {
@@ -111,14 +113,24 @@ export const fetchRoundsFromGoogleSheets = async (): Promise<Round[]> => {
         const roundsData = Array.isArray(data) ? data : (data.rounds || []);
         console.log(`Parsed ${roundsData.length} rounds from Google Sheets`);
 
-        return roundsData.map((item: Record<string, unknown>) => ({
-            id: String(item.id),
-            date: new Date(item.date as string),
-            scores: (item.scores as Record<number, import('../types').HoleScore>) || {},
-            currentHoleIndex: 0, // Reset to start for viewed rounds
-            startingHoleNumber: 1, // Default behavior
-            isFinished: true // Assumed finished if stored in sheets
-        }));
+        return roundsData.map((item: Record<string, unknown>) => {
+            let parsedGuests = undefined;
+            if (typeof item.guests === 'string' && item.guests) {
+                try { parsedGuests = JSON.parse(item.guests); } catch { parsedGuests = undefined; }
+            } else if (Array.isArray(item.guests)) {
+                parsedGuests = item.guests;
+            }
+
+            return {
+                id: String(item.id),
+                date: new Date(item.date as string),
+                scores: (item.scores as Record<number, import('../types').HoleScore>) || {},
+                guests: parsedGuests,
+                currentHoleIndex: 0, // Reset to start for viewed rounds
+                startingHoleNumber: 1, // Default behavior
+                isFinished: true // Assumed finished if stored in sheets
+            };
+        });
     } catch (error) {
         console.error('Error fetching rounds from Google Sheets:', error);
         throw error;
