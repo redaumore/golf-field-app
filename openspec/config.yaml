@@ -1,0 +1,12 @@
+version: "1.0"
+mode: "openspec"
+strict_tdd: true
+project:
+  name: "golf-field-app"
+  version: "1.10.0"
+  stack: "React 19, TypeScript 5.9, Vite 7, Tailwind CSS v4, Capacitor 7"
+tools:
+  linter: "npm run lint"
+  type_checker: "npm run build"
+  test_runner: "npm test"
+  formatter: null

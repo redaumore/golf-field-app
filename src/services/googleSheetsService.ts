@@ -5,7 +5,7 @@ interface SheetPayload {
     id: string;
     date: string;
     totalScore: number;
-    scores: Record<string, any>;
+    scores: Record<string, unknown>;
 }
 
 export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
@@ -111,10 +111,10 @@ export const fetchRoundsFromGoogleSheets = async (): Promise<Round[]> => {
         const roundsData = Array.isArray(data) ? data : (data.rounds || []);
         console.log(`Parsed ${roundsData.length} rounds from Google Sheets`);
 
-        return roundsData.map((item: any) => ({
-            id: item.id,
-            date: new Date(item.date),
-            scores: item.scores || {},
+        return roundsData.map((item: Record<string, unknown>) => ({
+            id: String(item.id),
+            date: new Date(item.date as string),
+            scores: (item.scores as Record<number, import('../types').HoleScore>) || {},
             currentHoleIndex: 0, // Reset to start for viewed rounds
             startingHoleNumber: 1, // Default behavior
             isFinished: true // Assumed finished if stored in sheets
@@ -211,21 +211,21 @@ export const fetchDrivingSessionsFromGoogleSheets = async (limit?: number, offse
         console.log('Raw driving sessions from Google Sheets:', data);
 
         // The script returns { sessions: [...] }
-        const sessionsData: any[] = Array.isArray(data) ? data : (data.sessions || []);
+        const sessionsData: Record<string, unknown>[] = Array.isArray(data) ? data : (data.sessions || []);
         console.log(`Parsed ${sessionsData.length} driving sessions from Google Sheets`);
 
-        return sessionsData.map((item: any) => {
+        return sessionsData.map((item: Record<string, unknown>) => {
             // Parse shots — stored as JSON string in the sheet
             let shots = [];
             if (typeof item.shots === 'string' && item.shots) {
-                try { shots = JSON.parse(item.shots); } catch (_) { shots = []; }
+                try { shots = JSON.parse(item.shots); } catch { shots = []; }
             } else if (Array.isArray(item.shots)) {
                 shots = item.shots;
             }
 
             return {
                 id: String(item.id).replace(/^'/, ''), // strip leading apostrophe if present
-                date: new Date(item.date),
+                date: new Date(item.date as string | number | Date),
                 club: item.club as import('../types').DrivingSession['club'],
                 shots,
                 isFinished: true

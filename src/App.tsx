@@ -154,7 +154,7 @@ function App() {
           try {
             const parsed = JSON.parse(savedRoundsStr);
             // Simple cast only for ID check
-            localRounds = parsed.map((r: any) => ({ ...r, date: new Date(r.date) }));
+            localRounds = parsed.map((r: Round) => ({ ...r, date: new Date(r.date) }));
           } catch (e) { console.error(e); }
         }
 
@@ -189,7 +189,7 @@ function App() {
     // Essentially: Remote is source of truth for its own IDs. Local is source of truth for new IDs.
     const localRoundsStr = localStorage.getItem(STORAGE_KEY);
     let localRounds: Round[] = [];
-    if (localRoundsStr) try { localRounds = JSON.parse(localRoundsStr).map((r: any) => ({ ...r, date: new Date(r.date) })); } catch (e) { }
+    if (localRoundsStr) try { localRounds = JSON.parse(localRoundsStr).map((r: Round) => ({ ...r, date: new Date(r.date) })); } catch { /* ignore invalid local storage */ }
 
     const localOnly = localRounds.filter(local => !pendingRemoteRounds.some(remote => remote.id === local.id));
     const merged = [...pendingRemoteRounds, ...localOnly];
@@ -419,7 +419,7 @@ function App() {
     if (currentRoundId) {
       setRounds(prev => prev.map(round => {
         if (round.id === currentRoundId) {
-          let updatedRound = { ...round, currentHoleIndex: nextIndex };
+          const updatedRound = { ...round, currentHoleIndex: nextIndex };
           const roundWithTee = ensureTeeLocation(updatedRound, nextIndex);
           return roundWithTee || updatedRound;
         }
@@ -437,7 +437,7 @@ function App() {
     if (currentRoundId) {
       setRounds(prev => prev.map(round => {
         if (round.id === currentRoundId) {
-          let updatedRound = { ...round, currentHoleIndex: prevIndex };
+          const updatedRound = { ...round, currentHoleIndex: prevIndex };
           const roundWithTee = ensureTeeLocation(updatedRound, prevIndex);
           return roundWithTee || updatedRound;
         }

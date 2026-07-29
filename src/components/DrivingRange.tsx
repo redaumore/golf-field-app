@@ -42,7 +42,7 @@ export const DrivingRange: React.FC<DrivingRangeProps> = ({ onMenuClick }) => {
             const saved = localStorage.getItem('golf-app-driving-sessions');
             if (saved) {
                 try {
-                    localSessions = JSON.parse(saved).map((s: any) => ({
+                    localSessions = JSON.parse(saved).map((s: DrivingSession) => ({
                         ...s,
                         date: new Date(s.date)
                     }));
