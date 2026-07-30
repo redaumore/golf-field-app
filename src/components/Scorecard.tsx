@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Hole, HoleScore, GuestPlayer } from '../types';
-import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users, User } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
 
@@ -15,12 +15,19 @@ interface ScorecardProps {
 
 export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string>('main');
 
-    const totalShots = Object.values(scores).reduce((acc, score) => acc + score.approachShots + score.putts, 0);
-    const playedHoles = course.filter(hole => scores[hole.number] && (scores[hole.number].approachShots + scores[hole.number].putts > 0));
+    const selectedGuest = guests?.find(g => g.id === selectedPlayerId);
+    const activeName = selectedPlayerId === 'main' ? 'Jugador Principal' : (selectedGuest?.name || 'Invitado');
+    const activeScores = selectedPlayerId === 'main' 
+        ? scores 
+        : (selectedGuest?.scores || {});
+
+    const totalShots = Object.values(activeScores).reduce((acc, score) => acc + (score?.approachShots || 0) + (score?.putts || 0), 0);
+    const playedHoles = course.filter(hole => activeScores[hole.number] && ((activeScores[hole.number].approachShots || 0) + (activeScores[hole.number].putts || 0) > 0));
     const totalPar = playedHoles.reduce((acc, hole) => acc + hole.par, 0);
-    const relativeScore = calculateRelativeScore(course, scores);
-    const scoreDistribution = calculateScoreDistribution(course, scores);
+    const relativeScore = calculateRelativeScore(course, activeScores);
+    const scoreDistribution = calculateScoreDistribution(course, activeScores);
 
     const statItems = [
         { label: 'Eagles/Mejor', count: scoreDistribution.eaglesOrBetter, colorClass: 'bg-amber-500', textClass: 'text-amber-600 dark:text-amber-400' },
@@ -33,10 +40,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
     ];
 
 
-    const getScoreForHole = (holeNumber: number) => {
-        const score = scores[holeNumber];
+    const getScoreForHole = (holeNumber: number, targetScores: Record<number, { approachShots: number; putts: number }>) => {
+        const score = targetScores[holeNumber];
         if (!score) return { total: 0, display: '-' };
-        return { total: score.approachShots + score.putts, display: (score.approachShots + score.putts).toString() };
+        const holeTotal = score.approachShots + score.putts;
+        if (holeTotal === 0) return { total: 0, display: '-' };
+        return { total: holeTotal, display: holeTotal.toString() };
     };
 
     const getScoreColor = (par: number, score: number) => {
@@ -78,18 +87,51 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 pb-20">
 
-                {/* Summary Banner for Main Player and Guests */}
+                {/* Player Selector Tabs when guests exist */}
+                {guests && guests.length > 0 && (
+                    <div className="mb-4">
+                        <div className="text-xs font-bold uppercase tracking-wider mb-2 theme-text-tertiary">
+                            Seleccionar Jugador
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            <button
+                                onClick={() => setSelectedPlayerId('main')}
+                                className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                                    selectedPlayerId === 'main'
+                                        ? 'theme-btn-primary shadow-sm scale-105'
+                                        : 'theme-card theme-text-secondary border theme-border hover:opacity-80'
+                                }`}
+                            >
+                                <User size={14} /> Jugador Principal
+                            </button>
+                            {guests.map(guest => (
+                                <button
+                                    key={guest.id}
+                                    onClick={() => setSelectedPlayerId(guest.id)}
+                                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                                        selectedPlayerId === guest.id
+                                            ? 'theme-btn-primary shadow-sm scale-105'
+                                            : 'theme-card theme-text-secondary border theme-border hover:opacity-80'
+                                    }`}
+                                >
+                                    <Users size={14} /> {guest.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Summary Banner for Selected Player */}
                 <div className="mb-6 space-y-3">
-                    {/* Main player summary */}
                     <div className="p-4 theme-card-approach rounded-lg border-2">
-                        <div className="text-xs font-bold uppercase tracking-wider mb-2 text-center theme-text-approach">
-                            Jugador Principal
+                        <div className="text-xs font-bold uppercase tracking-wider mb-2 text-center theme-text-approach flex items-center justify-center gap-1.5">
+                            {selectedPlayerId === 'main' ? <User size={14} /> : <Users size={14} />} {activeName}
                         </div>
                         <div className="flex justify-around items-center">
                             <div className="text-center">
                                 <div className="text-sm theme-text-approach uppercase tracking-wide font-semibold">Total</div>
                                 <div className="text-4xl font-black theme-text-approach">{totalShots}</div>
-                                <div className="text-xs theme-text-approach opacity-75">Par {totalPar}</div>
+                                <div className="text-xs theme-text-approach opacity-75">Par {totalPar} ({playedHoles.length} hoyos)</div>
                             </div>
                             <div className="w-px h-12 bg-blue-200 opacity-50"></div>
                             <div className="text-center">
@@ -102,36 +144,36 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                         </div>
                     </div>
 
-                    {/* Guest player summary cards */}
+                    {/* Quick switch cards for other players */}
                     {guests && guests.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {guests.map((guest) => {
-                                const guestTotalShots = Object.values(guest.scores).reduce((acc, s) => acc + s.approachShots + s.putts, 0);
-                                const guestPlayedHoles = course.filter(h => guest.scores[h.number] && (guest.scores[h.number].approachShots + guest.scores[h.number].putts > 0));
-                                const guestTotalPar = guestPlayedHoles.reduce((acc, h) => acc + h.par, 0);
-                                const guestRel = guestTotalShots - guestTotalPar;
-
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {selectedPlayerId !== 'main' && (
+                                <div
+                                    onClick={() => setSelectedPlayerId('main')}
+                                    className="p-2.5 theme-card rounded-lg border theme-border cursor-pointer hover:border-blue-400 transition-all flex items-center justify-between"
+                                >
+                                    <div className="text-xs font-bold uppercase theme-text-secondary flex items-center gap-1.5">
+                                        <User size={14} /> Jugador Principal
+                                    </div>
+                                    <div className="text-xs font-semibold theme-text-tertiary">Ver scorecard &rarr;</div>
+                                </div>
+                            )}
+                            {guests.filter(g => g.id !== selectedPlayerId).map((g) => {
+                                const gShots = Object.values(g.scores).reduce((acc, s) => acc + s.approachShots + s.putts, 0);
+                                const gPlayed = course.filter(h => g.scores[h.number] && (g.scores[h.number].approachShots + g.scores[h.number].putts > 0));
+                                const gPar = gPlayed.reduce((acc, h) => acc + h.par, 0);
+                                const gRel = gShots - gPar;
                                 return (
-                                    <div key={guest.id} className="p-3 theme-card rounded-lg border-2 shadow-sm flex items-center justify-between">
-                                        <div>
-                                            <div className="text-xs font-bold uppercase theme-text-secondary flex items-center gap-1.5">
-                                                <Users size={14} /> {guest.name}
-                                            </div>
-                                            <div className="text-xs theme-text-tertiary">
-                                                Par {guestTotalPar} ({guestPlayedHoles.length} hoyos)
-                                            </div>
+                                    <div
+                                        key={g.id}
+                                        onClick={() => setSelectedPlayerId(g.id)}
+                                        className="p-2.5 theme-card rounded-lg border theme-border cursor-pointer hover:border-blue-400 transition-all flex items-center justify-between"
+                                    >
+                                        <div className="text-xs font-bold uppercase theme-text-secondary flex items-center gap-1.5">
+                                            <Users size={14} /> {g.name}
                                         </div>
-                                        <div className="flex items-center gap-3 text-right">
-                                            <div>
-                                                <div className="text-xs theme-text-secondary font-semibold">Total</div>
-                                                <div className="text-2xl font-black">{guestTotalShots}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-xs theme-text-secondary font-semibold">To Par</div>
-                                                <div className={`text-2xl font-black ${guestRel === 0 ? 'theme-text-accent-blue' : guestRel < 0 ? 'theme-text-accent-red' : 'theme-text-primary'}`}>
-                                                    {guestRel > 0 ? `+${guestRel}` : guestRel === 0 ? 'E' : guestRel}
-                                                </div>
-                                            </div>
+                                        <div className="text-xs font-bold">
+                                            {gShots} ({gRel > 0 ? `+${gRel}` : gRel === 0 ? 'E' : gRel})
                                         </div>
                                     </div>
                                 );
@@ -144,7 +186,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                 {playedHoles.length > 0 && (
                     <div className="mb-6 p-4 theme-card rounded-lg border-2 shadow-sm">
                         <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
-                            Distribución de Scores (Jugador Principal)
+                            Distribución de Scores ({activeName})
                         </h3>
 
                         {/* Barra de distribución horizontal segmentada */}
@@ -192,9 +234,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
 
                 <div className="space-y-3">
                     {course.map((hole) => {
-                        const score = scores[hole.number];
-                        const { total, display } = getScoreForHole(hole.number);
+                        const holeScore = activeScores[hole.number];
+                        const { total, display } = getScoreForHole(hole.number, activeScores);
                         const isExpanded = expandedHole === hole.number;
+                        const mainPlayerScore = scores[hole.number];
 
                         return (
                             <div key={hole.number} className="theme-card rounded-lg shadow-sm border theme-border overflow-hidden">
@@ -216,15 +259,15 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
 
                                     {/* Center: Details (Strokes breakdown) */}
                                     <div className="flex-1 px-3 flex flex-col justify-center border-l theme-border ml-2 pl-3">
-                                        {score ? (
+                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
                                             <div className="flex gap-3 text-xs font-medium theme-text-secondary">
                                                 <span className="flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                                    App: {score.approachShots}
+                                                    App: {holeScore.approachShots}
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                                                    Putts: {score.putts}
+                                                    Putts: {holeScore.putts}
                                                 </span>
                                             </div>
                                         ) : (
@@ -232,7 +275,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                         )}
                                     </div>
 
-                                    {/* Right: Total Score Main Player + Guest quick view */}
+                                    {/* Right: Total Score Active Player */}
                                     <div className="flex items-center gap-2">
                                         <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total)}`}>
                                             {display}
@@ -243,65 +286,90 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                 {/* Expanded Details */}
                                 {isExpanded && (
                                     <div className="theme-bg-secondary border-t theme-border p-3 text-sm animate-in slide-in-from-top-2 duration-200 space-y-3">
-                                        {/* Main Player Details */}
-                                        {score && (
-                                            <div>
-                                                <div className="text-xs font-bold theme-text-primary mb-1">Jugador Principal</div>
-                                                {score.approachShotsDetails && score.approachShotsDetails.length > 0 ? (
-                                                    <div>
-                                                        <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary mb-2 px-2">
-                                                            <span>Club</span>
-                                                            <span className="text-center">Distance</span>
-                                                            <span className="text-right">Time</span>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            {score.approachShotsDetails.map((shot, idx) => (
-                                                                <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-md theme-bg-primary theme-border border">
-                                                                    <span className="font-bold theme-text-primary">{shot.club}</span>
-                                                                    <span className="text-center theme-text-secondary font-mono">
-                                                                        {shot.distance ? `${shot.distance}y` : '-'}
-                                                                    </span>
-                                                                    <span className="text-right theme-text-tertiary text-[10px]">
-                                                                        {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-xs theme-text-tertiary italic">
-                                                        No shot details recorded
-                                                    </div>
-                                                )}
-
-                                                {/* Tee Info */}
-                                                {score.teeLocation && (
-                                                    <div className="mt-2 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
-                                                        <span>Tee Location Set</span>
-                                                        <span className="font-mono">
-                                                            {score.teeLocation.latitude.toFixed(5)}, {score.teeLocation.longitude.toFixed(5)}
-                                                        </span>
-                                                    </div>
-                                                )}
+                                        {/* Active Player Details */}
+                                        <div>
+                                            <div className="text-xs font-bold theme-text-primary mb-1 flex items-center gap-1">
+                                                {selectedPlayerId === 'main' ? <User size={13} /> : <Users size={13} />}
+                                                {activeName}
                                             </div>
-                                        )}
+                                            {selectedPlayerId === 'main' && mainPlayerScore ? (
+                                                <>
+                                                    {mainPlayerScore.approachShotsDetails && mainPlayerScore.approachShotsDetails.length > 0 ? (
+                                                        <div>
+                                                            <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary mb-2 px-2">
+                                                                <span>Club</span>
+                                                                <span className="text-center">Distance</span>
+                                                                <span className="text-right">Time</span>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                {mainPlayerScore.approachShotsDetails.map((shot, idx) => (
+                                                                    <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-md theme-bg-primary theme-border border">
+                                                                        <span className="font-bold theme-text-primary">{shot.club}</span>
+                                                                        <span className="text-center theme-text-secondary font-mono">
+                                                                            {shot.distance ? `${shot.distance}y` : '-'}
+                                                                        </span>
+                                                                        <span className="text-right theme-text-tertiary text-[10px]">
+                                                                            {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-xs theme-text-tertiary italic">
+                                                            No shot details recorded
+                                                        </div>
+                                                    )}
 
-                                        {/* Guest Hole Scores */}
-                                        {guests && guests.length > 0 && (
+                                                    {/* Tee Info */}
+                                                    {mainPlayerScore.teeLocation && (
+                                                        <div className="mt-2 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
+                                                            <span>Tee Location Set</span>
+                                                            <span className="font-mono">
+                                                                {mainPlayerScore.teeLocation.latitude.toFixed(5)}, {mainPlayerScore.teeLocation.longitude.toFixed(5)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <div className="text-xs theme-text-secondary">
+                                                    {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
+                                                        <span>Golpes: {holeScore.approachShots + holeScore.putts} (App: {holeScore.approachShots}, Putts: {holeScore.putts})</span>
+                                                    ) : (
+                                                        <span className="theme-text-tertiary italic">Sin registrar hoyo {hole.number}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Other Players Comparison Section */}
+                                        {((selectedPlayerId !== 'main') || (guests && guests.length > 0)) && (
                                             <div className="pt-2 border-t theme-border">
-                                                <div className="text-xs font-bold theme-text-primary mb-2 flex items-center gap-1.5">
-                                                    <Users size={14} /> Invitados
+                                                <div className="text-xs font-bold theme-text-tertiary mb-2 uppercase tracking-wide">
+                                                    Otros Jugadores
                                                 </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    {guests.map((g) => {
+                                                    {selectedPlayerId !== 'main' && (
+                                                        <div className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
+                                                            <span className="font-semibold flex items-center gap-1"><User size={12} /> Jugador Principal</span>
+                                                            {mainPlayerScore && (mainPlayerScore.approachShots + mainPlayerScore.putts > 0) ? (
+                                                                <span className="theme-text-secondary font-mono font-bold">
+                                                                    {mainPlayerScore.approachShots + mainPlayerScore.putts} golpes
+                                                                </span>
+                                                            ) : (
+                                                                <span className="theme-text-tertiary italic">-</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {guests?.filter(g => g.id !== selectedPlayerId).map((g) => {
                                                         const gScore = g.scores[hole.number];
                                                         const gTotal = gScore ? gScore.approachShots + gScore.putts : 0;
                                                         return (
                                                             <div key={g.id} className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
-                                                                <span className="font-semibold">{g.name}</span>
-                                                                {gScore ? (
-                                                                    <span className="theme-text-secondary">
-                                                                        {gTotal} golpes (App: {gScore.approachShots}, Putt: {gScore.putts})
+                                                                <span className="font-semibold flex items-center gap-1"><Users size={12} /> {g.name}</span>
+                                                                {gScore && gTotal > 0 ? (
+                                                                    <span className="theme-text-secondary font-mono font-bold">
+                                                                        {gTotal} golpes
                                                                     </span>
                                                                 ) : (
                                                                     <span className="theme-text-tertiary italic">-</span>
@@ -322,3 +390,4 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
         </div>
     );
 };
+

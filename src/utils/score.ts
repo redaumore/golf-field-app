@@ -1,6 +1,8 @@
-import type { Hole, HoleScore, ScoreDistribution } from '../types';
+import type { Hole, HoleScore, GuestScore, ScoreDistribution } from '../types';
 
-export const calculateRelativeScore = (course: Hole[], scores: Record<number, HoleScore>): number => {
+type ScoreRecord = Record<number, HoleScore | GuestScore | { approachShots: number; putts: number }>;
+
+export const calculateRelativeScore = (course: Hole[], scores: ScoreRecord): number => {
     let totalShots = 0;
     let totalPar = 0;
 
@@ -21,7 +23,7 @@ export const calculateRelativeScore = (course: Hole[], scores: Record<number, Ho
 
 export const calculateScoreDistribution = (
     course: Hole[],
-    scores: Record<number, HoleScore>
+    scores: ScoreRecord
 ): ScoreDistribution => {
     const dist: ScoreDistribution = {
         eaglesOrBetter: 0,
@@ -61,4 +63,5 @@ export const calculateScoreDistribution = (
 
     return dist;
 };
+
 
