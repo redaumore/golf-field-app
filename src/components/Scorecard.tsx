@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Hole, HoleScore, GuestPlayer } from '../types';
-import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users, User } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users, User, Edit2 } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
 
@@ -11,9 +11,10 @@ interface ScorecardProps {
     onBack: () => void;
     onMenuClick: () => void;
     guests?: GuestPlayer[];
+    onEditHole?: (holeNumber: number) => void;
 }
 
-export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests }) => {
+export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests, onEditHole }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>('main');
 
@@ -380,6 +381,21 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                                 </div>
                                             </div>
                                         )}
+
+                                        {onEditHole && (
+                                            <div className="pt-2 border-t theme-border flex justify-end">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEditHole(hole.number);
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl theme-btn-primary text-xs font-bold shadow-sm active:scale-95 transition-transform"
+                                                >
+                                                    <Edit2 size={14} />
+                                                    Editar Hoyo {hole.number}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -390,4 +406,3 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
         </div>
     );
 };
-

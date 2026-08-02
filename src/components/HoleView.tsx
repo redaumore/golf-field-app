@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Hole, HoleScore, GolfClub, GeoLocation, GuestPlayer } from '../types';
-import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu, Users, FileText } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { APP_VERSION } from '../constants/version';
 import { calculateDistance } from '../utils/geo';
@@ -20,6 +20,7 @@ interface HoleViewProps {
     onMenuClick: () => void;
     guests?: GuestPlayer[];
     onUpdateGuestScore?: (guestId: string, type: 'approach' | 'putt', delta: number) => void;
+    onOpenScorecard?: () => void;
 }
 
 const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
@@ -38,6 +39,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onMenuClick,
     guests,
     onUpdateGuestScore,
+    onOpenScorecard,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
@@ -111,6 +113,15 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {onOpenScorecard && (
+                        <button
+                            onClick={onOpenScorecard}
+                            className="p-2 theme-btn-primary rounded-lg shadow-sm active:scale-95 transition-transform"
+                            title="Scorecard"
+                        >
+                            <FileText size={20} />
+                        </button>
+                    )}
                     {!isReadOnly && (
                         <button
                             onClick={() => setShowFinishModal(true)}

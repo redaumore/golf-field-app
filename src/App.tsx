@@ -90,6 +90,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [showAppMenu, setShowAppMenu] = useState(false);
+  const [isEditingRound, setIsEditingRound] = useState(false);
 
   // State for sync conflict handling
   const [syncConflictModalOpen, setSyncConflictModalOpen] = useState(false);
@@ -274,6 +275,7 @@ function App() {
     if (round) {
       setCurrentRoundId(roundId);
       setCurrentHoleIndex(round.currentHoleIndex);
+      setIsEditingRound(false);
 
       // Ensure tee location for current hole when resuming
       if (!round.isFinished) {
@@ -289,6 +291,13 @@ function App() {
       // Si la rueda está finalizada, ir directo al scorecard
       setView(round.isFinished ? 'scorecard' : 'play');
     }
+  };
+
+  // Edit a specific hole in a round
+  const handleEditHole = (holeNumber: number) => {
+    setIsEditingRound(true);
+    setCurrentHoleIndex(holeNumber - 1);
+    setView('play');
   };
 
   // Delete a round
@@ -313,7 +322,7 @@ function App() {
     }
   };
 
-  // Finish a round manually
+  // Finish a round manually (or save edits)
   const handleFinishRound = async () => {
     if (!currentRoundId) return;
 
@@ -336,7 +345,9 @@ function App() {
         : round
     ));
 
-    setView('rounds');
+    const wasEditing = isEditingRound;
+    setIsEditingRound(false);
+    setView(wasEditing ? 'scorecard' : 'rounds');
   };
 
   // Calculate distance in yards between two coordinates
@@ -565,10 +576,11 @@ function App() {
           onFinishRound={handleFinishRound}
           isFirst={isFirst}
           isLast={isLast}
-          isReadOnly={isCurrentRoundComplete}
+          isReadOnly={isCurrentRoundComplete && !isEditingRound}
           relativeScore={calculateRelativeScore(COURSE_DATA, currentRound?.scores || {})}
           guests={currentRound?.guests}
           onUpdateGuestScore={handleUpdateGuestScore}
+          onOpenScorecard={() => setView('scorecard')}
         />
       ) : view === 'scorecard' ? (
         <Scorecard
@@ -577,6 +589,7 @@ function App() {
           scores={currentRound?.scores || {}}
           guests={currentRound?.guests}
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
+          onEditHole={handleEditHole}
         />
       ) : (
         <DrivingRange 
