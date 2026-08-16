@@ -65,7 +65,7 @@ export interface RoundMetadata {
   isComplete: boolean;
 }
 
-export type View = 'rounds' | 'play' | 'scorecard' | 'driving';
+export type View = 'rounds' | 'play' | 'scorecard' | 'driving' | 'profile';
 
 export interface DrivingShot {
   id: string;

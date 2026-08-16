@@ -3,6 +3,7 @@ import type { Hole, HoleScore, GuestPlayer } from '../types';
 import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users, User, Edit2 } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
+import { countLostBalls, maxDistanceByClub } from '../utils/stats';
 
 
 interface ScorecardProps {
@@ -29,6 +30,9 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
     const totalPar = playedHoles.reduce((acc, hole) => acc + hole.par, 0);
     const relativeScore = calculateRelativeScore(course, activeScores);
     const scoreDistribution = calculateScoreDistribution(course, activeScores);
+
+    const lostBalls = countLostBalls(scores);
+    const clubDistances = maxDistanceByClub(scores);
 
     const statItems = [
         { label: 'Eagles/Mejor', count: scoreDistribution.eaglesOrBetter, colorClass: 'bg-amber-500', textClass: 'text-amber-600 dark:text-amber-400' },
@@ -230,6 +234,41 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                 );
                             })}
                         </div>
+                    </div>
+                )}
+
+                {/* Bolas perdidas y distancias (main player only) */}
+                {selectedPlayerId === 'main' && (
+                    <div className="mb-6 p-4 theme-card rounded-lg border-2 shadow-sm">
+                        <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
+                            Bolas perdidas y distancias
+                        </h3>
+
+                        <div className="flex items-center justify-between p-3 rounded-xl border theme-border mb-4 theme-bg-primary shadow-sm">
+                            <span className="text-sm font-semibold theme-text-secondary">Bolas perdidas</span>
+                            <span className="text-2xl font-black theme-text-primary">{lostBalls}</span>
+                        </div>
+
+                        <div className="text-xs font-bold uppercase tracking-wider theme-text-secondary mb-2">
+                            Mayor distancia por palo
+                        </div>
+                        {clubDistances.length === 0 ? (
+                            <div className="text-xs theme-text-tertiary italic">
+                                Sin datos de distancia aún
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {clubDistances.map((item) => (
+                                    <div
+                                        key={item.club}
+                                        className="flex flex-col items-center justify-center p-2 rounded-xl border theme-border theme-bg-primary hover:scale-[1.02] shadow-sm hover:shadow-md transition-all duration-200"
+                                    >
+                                        <span className="text-xs font-black theme-text-primary">{item.club}</span>
+                                        <span className="text-xs font-semibold theme-text-secondary font-mono">{item.distance}y</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 

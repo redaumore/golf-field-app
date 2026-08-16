@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, X } from 'lucide-react';
+import { Home, X, User } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 interface AppMenuProps {
@@ -7,13 +7,15 @@ interface AppMenuProps {
     onClose: () => void;
     onNavigateToRounds: () => void;
     onNavigateToDriving: () => void;
+    onNavigateToProfile: () => void;
 }
 
 export const AppMenu: React.FC<AppMenuProps> = ({
     isOpen,
     onClose,
     onNavigateToRounds,
-    onNavigateToDriving
+    onNavigateToDriving,
+    onNavigateToProfile
 }) => {
     if (!isOpen) return null;
 
@@ -64,6 +66,19 @@ export const AppMenu: React.FC<AppMenuProps> = ({
                         </svg>
                     </div>
                     <span className="text-lg">Driving Range</span>
+                </button>
+
+                <button
+                    onClick={() => {
+                        onClose();
+                        onNavigateToProfile();
+                    }}
+                    className="flex items-center gap-4 w-full p-4 theme-bg-secondary rounded-xl font-bold border theme-border hover:brightness-95 active:scale-95 transition-all text-left"
+                >
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                        <User size={20} className="text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="text-lg">Perfil</span>
                 </button>
 
 

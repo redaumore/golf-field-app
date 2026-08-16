@@ -12,8 +12,11 @@ import { calculateDistance } from './utils/geo';
 import { calculateRelativeScore } from './utils/score';
 import { AppMenu } from './components/AppMenu';
 import { DrivingRange } from './components/DrivingRange';
+import { Profile } from './components/Profile';
+import { calculateHandicapBreakdown } from './utils/stats';
 
 const STORAGE_KEY = 'golf-app-rounds';
+const PLAYER_NAME_KEY = 'golf-app-player-name';
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
   if (!round) return undefined;
 
@@ -91,6 +94,7 @@ function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [isEditingRound, setIsEditingRound] = useState(false);
+  const [playerName, setPlayerName] = useState<string>(() => localStorage.getItem(PLAYER_NAME_KEY) || '');
 
   // State for sync conflict handling
   const [syncConflictModalOpen, setSyncConflictModalOpen] = useState(false);
@@ -215,6 +219,13 @@ function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rounds));
     }
   }, [rounds]);
+
+  // Persist player name to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(PLAYER_NAME_KEY, playerName);
+  }, [playerName]);
+
+  const handleNameChange = (name: string) => setPlayerName(name);
 
   // Generate round ID from current date (dd-mm-yyyy)
   const generateRoundId = (): string => {
@@ -540,6 +551,9 @@ function App() {
   const isFirst = currentHoleIndex === startingHoleIndex;
   const isLast = (currentHoleIndex + 1) % COURSE_DATA.length === startingHoleIndex;
 
+  const completedRoundsCount = rounds.filter(r => r.isFinished).length;
+  const handicapBreakdown = calculateHandicapBreakdown(rounds, COURSE_DATA);
+
   return (
     <div className="min-h-screen w-full bg-white">
       {showSplash && <Splash />}
@@ -591,6 +605,15 @@ function App() {
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
           onEditHole={handleEditHole}
         />
+      ) : view === 'profile' ? (
+        <Profile
+          playerName={playerName}
+          breakdown={handicapBreakdown}
+          roundsCount={completedRoundsCount}
+          onNameChange={handleNameChange}
+          onMenuClick={() => setShowAppMenu(true)}
+          onBack={() => setView('rounds')}
+        />
       ) : (
         <DrivingRange 
           onMenuClick={() => setShowAppMenu(true)}
@@ -602,6 +625,7 @@ function App() {
         onClose={() => setShowAppMenu(false)}
         onNavigateToRounds={() => setView('rounds')}
         onNavigateToDriving={() => setView('driving')}
+        onNavigateToProfile={() => setView('profile')}
       />
 
       <StartingHoleModal
