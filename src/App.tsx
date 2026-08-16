@@ -367,7 +367,7 @@ function App() {
 
 
   // Update score for current round
-  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean) => {
+  const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean, fairwayHit?: boolean) => {
     if (!currentRoundId) return;
 
     const holeNumber = COURSE_DATA[currentHoleIndex].number;
@@ -413,7 +413,8 @@ function App() {
             timestamp: Date.now(),
             location,
             distance,
-            isRepresentative
+            isRepresentative,
+            fairwayHit
           };
           newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
         } else if (delta < 0) {

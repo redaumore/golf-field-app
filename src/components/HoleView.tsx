@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Hole, HoleScore, GolfClub, GeoLocation, GuestPlayer } from '../types';
-import { ChevronLeft, ChevronRight, MapPin, Flag, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu, Users, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Flag, Target, CheckCircle, Loader2, XCircle, BarChart2, Image as ImageIcon, X, Menu, Users, FileText } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { APP_VERSION } from '../constants/version';
 import { calculateDistance } from '../utils/geo';
@@ -8,7 +8,7 @@ import { calculateDistance } from '../utils/geo';
 interface HoleViewProps {
     hole: Hole;
     score: HoleScore;
-    onUpdateScore: (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean) => void;
+    onUpdateScore: (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean, fairwayHit?: boolean) => void;
     onNext: () => void;
     onPrev: () => void;
     onFinishRound: () => void;
@@ -45,6 +45,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [isRepresentative, setIsRepresentative] = useState(false);
+    const [fairwayHit, setFairwayHit] = useState(false);
     const [showHoleImage, setShowHoleImage] = useState(false);
 
     const totalScore = score.approachShots + score.putts;
@@ -55,11 +56,17 @@ export const HoleView: React.FC<HoleViewProps> = ({
     const handleAddApproach = () => {
         if (!selectedClub) return;
 
+        // Fairway Hit only applies to the tee shot (first approach) on par 4/5 holes.
+        const fairwayHitValue = score.approachShots === 0 && hole.par >= 4 && selectedClub !== 'LostBall'
+            ? fairwayHit
+            : undefined;
+
         // Special handling for Lost Ball: No geolocation needed
         if (selectedClub === 'LostBall') {
-            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
+            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative, fairwayHitValue);
             setSelectedClub(null);
             setIsRepresentative(false);
+            setFairwayHit(false);
             return;
         }
 
@@ -72,17 +79,19 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy
-                    }, isRepresentative);
+                    }, isRepresentative, fairwayHitValue);
                     setSelectedClub(null);
                     setIsRepresentative(false);
+                    setFairwayHit(false);
                     setIsLocating(false);
                 },
                 (error) => {
                     console.warn("Geolocation error:", error);
                     // Fallback without location if error occurs
-                    onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
+                    onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative, fairwayHitValue);
                     setSelectedClub(null);
                     setIsRepresentative(false);
+                    setFairwayHit(false);
                     setIsLocating(false);
                 },
                 // High accuracy for golf course precision
@@ -90,9 +99,10 @@ export const HoleView: React.FC<HoleViewProps> = ({
             );
         } else {
             // Fallback for browsers without geolocation
-            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative);
+            onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative, fairwayHitValue);
             setSelectedClub(null);
             setIsRepresentative(false);
+            setFairwayHit(false);
             setIsLocating(false);
         }
     };
@@ -218,6 +228,21 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             </button>
                             <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
                             <div className="flex items-center gap-2">
+                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && score.approachShots === 0 && hole.par >= 4 && (
+                                    <button
+                                        onClick={() => setFairwayHit(!fairwayHit)}
+                                        className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${fairwayHit
+                                            ? 'bg-green-100 border-green-500 text-green-700'
+                                            : 'bg-gray-50 border-gray-300 text-gray-400'
+                                            }`}
+                                        title={fairwayHit ? 'Fairway hit' : 'Missed fairway (Rough / Penalty)'}
+                                    >
+                                        <Target size={20} className={fairwayHit ? '' : 'opacity-40'} />
+                                        <span className="text-[8px] font-black mt-0.5 tracking-tighter leading-none">
+                                            {fairwayHit ? 'FAIRWAY' : 'MISS'}
+                                        </span>
+                                    </button>
+                                )}
                                 {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && (
                                     <button
                                         onClick={() => setIsRepresentative(!isRepresentative)}

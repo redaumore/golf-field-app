@@ -27,6 +27,7 @@ export interface ShotDetail {
   timestamp: number;
   distance?: number; // Distance achieved in yards
   isRepresentative?: boolean; // true if the shot should be included in statistics
+  fairwayHit?: boolean; // true if the tee shot landed on the fairway (par 4/5 holes only)
 }
 
 export interface HoleScore {
