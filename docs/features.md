@@ -49,6 +49,13 @@ Inventario de la funcionalidad de la aplicación. Este documento distingue lo qu
 | Código de colores | Resultados de hoyo por color según la relación con el par (águila+, birdie, par, sin jugar). |
 | Vistas por jugador | El jugador principal y los invitados tienen totales y distribución independientes. |
 
+### Perfil del jugador
+
+| Funcionalidad | Descripción |
+|---|---|
+| Hándicap estimado (WHS) | Índice con un decimal calculado sobre rondas completas de 18 hoyos: doble bogey neto por hoyo, diferencial `(Score Bruto Ajustado − Course Rating − PCC) × 113 / Slope` y promedio de los mejores 8 de las últimas 20. Usa defaults de golf: Slope 113, Course Rating = Par, PCC 0. |
+| Desglose del hándicap | Lista las rondas que entran al cálculo con su score bruto, ajustado y diferencial, marcando cuáles se promedian. |
+
 ### Driving range
 
 | Funcionalidad | Descripción |
@@ -95,26 +102,55 @@ Inventario de la funcionalidad de la aplicación. Este documento distingue lo qu
 
 ## Pendiente
 
-Funcionalidades planificadas o solicitadas que aún no se implementaron. Se agregan nuevos ítems a esta tabla a medida que se definen.
+Funcionalidades planificadas o solicitadas que aún no se implementaron. Están agrupadas en fases según el plan de dependencias e impacto.
 
-| ID | Funcionalidad | Área | Descripción | Notas |
-|---|---|---|---|---|
-| P-01 | Fairway Hit (primer golpe en calle) | Estadísticas por ronda | Mide la precisión de salida en hoyos par 4 y par 5, registrando si el tiro desde el tee aterriza en el fairway o se desvía al rough o zonas de penalidad. | |
-| P-02 | Cantidad de bolas perdidas | Estadísticas por ronda | Lleva un registro rápido de las pelotas extraviadas o jugadas fuera de límites en cada vuelta, ayudando a identificar el impacto directo de las penalizaciones en el score. | |
-| P-03 | Mayor distancia obtenida por palo | Estadísticas por ronda | Almacena el golpe más largo ejecutado con éxito para cada palo específico de la bolsa durante la ronda, dando una referencia real del rendimiento máximo del día. | |
-| P-04 | Cálculo del hándicap estimado | Perfil del jugador | Calcula y actualiza automáticamente el nivel de juego estimado en función de las últimas rondas completadas de 18 hoyos. | |
-| P-05 | Porcentaje de acierto en calle (últimas 5 rondas) | Perfil del jugador | Analiza la consistencia a corto plazo calculando la media de primeros golpes que se lograron mantener en el fairway en las últimas 5 partidas. | |
-| P-06 | Promedio de bolas perdidas (últimas 5 rondas) | Perfil del jugador | Indicador estratégico que promedia las pelotas perdidas en los últimos 5 recorridos para evaluar si se están tomando decisiones más seguras en el campo. | |
-| P-07 | Mayor distancia histórica por palo (últimas 10 rondas) | Perfil del jugador | Consolida los tiros más largos logrados con cada palo en las últimas 10 vueltas, permitiendo armar la tabla de distancias máximas reales. | |
-| P-08 | Configuración de "Mi Bolsa" | Perfil del jugador | Panel dedicado para gestionar el equipamiento: dar de alta palos específicos, personalizar las distancias estimadas de referencia y configurar sus características físicas. | |
-| P-09 | Mapeo de la bolsa y análisis de brechas (Gapping Analysis) | Perfil del jugador | Gráfico dinámico en el perfil que analiza la progresión de las distancias y alerta visualmente sobre "solapamientos" (palos distintos con los que se hace la misma distancia) o "huecos" (brechas mayores a 15 yardas sin cubrir entre palos). | |
-| P-10 | Vista satelital del hoyo | Dentro de cada ronda | Despliega un mapa aéreo detallado y de alta resolución de cada hoyo para identificar búnkers, obstáculos de agua y dog-legs antes de jugar. | |
-| P-11 | Ajuste del punto de salida (setting de geoposición) | Dentro de cada ronda | Permite establecer manualmente la posición exacta desde donde se inicia el juego en el tee de salida de cada hoyo, garantizando la máxima precisión en las mediciones de GPS. | |
-| P-12 | Ubicación actual en tiempo real | Dentro de cada ronda | Muestra la posición exacta sobre la imagen satelital del hoyo utilizando el GPS del dispositivo móvil. | |
-| P-13 | Confirmación de Bolsa Activa (Pre-ronda) | Dentro de cada ronda | Pantalla de verificación rápida antes de iniciar el juego para confirmar qué palos de "Mi Bolsa" se llevan físicamente al campo, sirviendo de filtro directo para el asistente. | |
-| P-14 | Marcación manual de aterrizaje de bola | Dentro de cada ronda | Permite tocar la pantalla en la vista satelital para marcar dónde reposa la pelota, registrando la posición, calculando la distancia del tiro anterior y construyendo el historial golpe a golpe. | |
-| P-15 | Asistente de voz manos libres (Golpe y Palo) | Dentro de cada ronda | Control de juego por voz: al llegar a la pelota, se le indica verbalmente al sistema qué palo se usó; la app geolocaliza la posición, registra el golpe, calcula la distancia del tiro anterior y dicta por audio cuántas yardas restan al centro del green. | |
-| P-16 | Recomendación inteligente de palo (Caddie Virtual con IA) | Dentro de cada ronda | Asistente en pantalla que analiza la distancia GPS restante hasta el green y la cruza con la base de datos de "Mi Bolsa" activa para sugerir proactivamente el palo ideal para el próximo golpe. | |
-| P-17 | Chat de consulta de reglamento | Reglas | Asistente interactivo de reglas con IA para resolver cualquier situación dudosa o conflicto en el fairway de forma instantánea; consulta por chat en lenguaje natural para obtener opciones de alivio claras (con o sin penalización) según el reglamento oficial. | |
-| P-18 | Persistencia local de datos (SQLite / Mobile DB) | Infraestructura y datos | Almacenamiento local optimizado y de alta velocidad en el dispositivo para guardar perfiles, historial de rondas, golpes geolocalizados y configuración de bolsa; garantiza una experiencia fluida y un funcionamiento 100% offline en campos sin cobertura de red. | |
-| P-19 | Generador de backup incremental post-ronda | Infraestructura y datos | Sistema automático de resguardo que se ejecuta de forma transparente en segundo plano inmediatamente después de finalizar y cerrar cada ronda; recopila e integra únicamente los datos nuevos en la nube, optimizando batería y datos móviles. | |
+> **Estado:** `✅ Implementado` = ítem ya construido; se conserva en la lista como registro del historial.
+
+### Fase 1 — Quick wins (derivables de datos ya capturados)
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-02 | Cantidad de bolas perdidas | Estadísticas por ronda | | Lleva un registro rápido de las pelotas extraviadas o jugadas fuera de límites en cada vuelta, ayudando a identificar el impacto directo de las penalizaciones en el score. | Deriva del palo `LostBall` ya registrado en cada golpe. |
+| P-03 | Mayor distancia obtenida por palo | Estadísticas por ronda | | Almacena el golpe más largo ejecutado con éxito para cada palo específico de la bolsa durante la ronda, dando una referencia real del rendimiento máximo del día. | `ShotDetail` ya guarda palo + distancia. |
+| P-04 | Cálculo del hándicap estimado | Perfil del jugador | ✅ Implementado | Calcula y actualiza automáticamente el nivel de juego estimado en función de las últimas rondas completadas de 18 hoyos. | WHS sobre rondas de 18 hoyos. |
+| P-06 | Promedio de bolas perdidas (últimas 5 rondas) | Perfil del jugador | | Indicador estratégico que promedia las pelotas perdidas en los últimos 5 recorridos para evaluar si se están tomando decisiones más seguras en el campo. | Depende de P-02. |
+| P-07 | Mayor distancia histórica por palo (últimas 10 rondas) | Perfil del jugador | | Consolida los tiros más largos logrados con cada palo en las últimas 10 vueltas, permitiendo armar la tabla de distancias máximas reales. | Depende de P-03. |
+
+### Fase 2 — Requieren nuevas fuentes de datos
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-01 | Fairway Hit (primer golpe en calle) | Estadísticas por ronda | ✅ Implementado | Mide la precisión de salida en hoyos par 4 y par 5, registrando si el tiro desde el tee aterriza en el fairway o se desvía al rough o zonas de penalidad. | Toggle manual en el tee shot (par 4/5); sin polígonos de fairway. |
+| P-05 | Porcentaje de acierto en calle (últimas 5 rondas) | Perfil del jugador | | Analiza la consistencia a corto plazo calculando la media de primeros golpes que se lograron mantener en el fairway en las últimas 5 partidas. | Depende de P-01. |
+| P-10 | Vista satelital del hoyo | Dentro de cada ronda | | Despliega un mapa aéreo detallado y de alta resolución de cada hoyo para identificar búnkers, obstáculos de agua y dog-legs antes de jugar. | Requiere tiles / fuente de mapas. |
+
+### Fase 3 — "Mi Bolsa" y dependientes
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-08 | Configuración de "Mi Bolsa" | Perfil del jugador | | Panel dedicado para gestionar el equipamiento: dar de alta palos específicos, personalizar las distancias estimadas de referencia y configurar sus características físicas. | Dependencia clave: hoy el palo es un enum fijo de 12, sin concepto de bolsa. |
+| P-09 | Mapeo de la bolsa y análisis de brechas (Gapping Analysis) | Perfil del jugador | | Gráfico dinámico en el perfil que analiza la progresión de las distancias y alerta visualmente sobre "solapamientos" (palos distintos con los que se hace la misma distancia) o "huecos" (brechas mayores a 15 yardas sin cubrir entre palos). | Depende de P-08. |
+| P-13 | Confirmación de Bolsa Activa (Pre-ronda) | Dentro de cada ronda | | Pantalla de verificación rápida antes de iniciar el juego para confirmar qué palos de "Mi Bolsa" se llevan físicamente al campo, sirviendo de filtro directo para el asistente. | Depende de P-08. |
+| P-16 | Recomendación inteligente de palo (Caddie Virtual con IA) | Dentro de cada ronda | | Asistente en pantalla que analiza la distancia GPS restante hasta el green y la cruza con la base de datos de "Mi Bolsa" activa para sugerir proactivamente el palo ideal para el próximo golpe. | Depende de P-08 y P-10. |
+
+### Fase 4 — Vista satelital y dependientes
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-11 | Ajuste del punto de salida (setting de geoposición) | Dentro de cada ronda | | Permite establecer manualmente la posición exacta desde donde se inicia el juego en el tee de salida de cada hoyo, garantizando la máxima precisión en las mediciones de GPS. | Depende de P-10. |
+| P-12 | Ubicación actual en tiempo real | Dentro de cada ronda | | Muestra la posición exacta sobre la imagen satelital del hoyo utilizando el GPS del dispositivo móvil. | Depende de P-10. |
+| P-14 | Marcación manual de aterrizaje de bola | Dentro de cada ronda | | Permite tocar la pantalla en la vista satelital para marcar dónde reposa la pelota, registrando la posición, calculando la distancia del tiro anterior y construyendo el historial golpe a golpe. | Depende de P-10. |
+
+### Fase 5 — Asistentes y reglas
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-15 | Asistente de voz manos libres (Golpe y Palo) | Dentro de cada ronda | | Control de juego por voz: al llegar a la pelota, se le indica verbalmente al sistema qué palo se usó; la app geolocaliza la posición, registra el golpe, calcula la distancia del tiro anterior y dicta por audio cuántas yardas restan al centro del green. | |
+| P-17 | Chat de consulta de reglamento | Reglas | | Asistente interactivo de reglas con IA para resolver cualquier situación dudosa o conflicto en el fairway de forma instantánea; consulta por chat en lenguaje natural para obtener opciones de alivio claras (con o sin penalización) según el reglamento oficial. | |
+
+### Fase 6 — Infraestructura y datos
+
+| ID | Funcionalidad | Área | Estado | Descripción | Notas |
+|---|---|---|---|---|---|
+| P-18 | Persistencia local de datos (SQLite / Mobile DB) | Infraestructura y datos | | Almacenamiento local optimizado y de alta velocidad en el dispositivo para guardar perfiles, historial de rondas, golpes geolocalizados y configuración de bolsa; garantiza una experiencia fluida y un funcionamiento 100% offline en campos sin cobertura de red. | |
+| P-19 | Generador de backup incremental post-ronda | Infraestructura y datos | | Sistema automático de resguardo que se ejecuta de forma transparente en segundo plano inmediatamente después de finalizar y cerrar cada ronda; recopila e integra únicamente los datos nuevos en la nube, optimizando batería y datos móviles. | |
