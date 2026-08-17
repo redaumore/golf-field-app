@@ -50,6 +50,6 @@ Tailwind v4 (`@import "tailwindcss"`). Theme system uses CSS custom properties s
 
 The version lives in **two places, kept in sync**: `package.json` (`version`) and `src/constants/version.ts` (`APP_VERSION`, shown in the UI headers).
 
-- A `commit-msg` hook (`.githooks/commit-msg`, active via `git config core.hooksPath .githooks`) bumps the version based on the conventional-commit type: `feat:` → **minor**, `fix:` → **patch**, anything else (`docs`, `chore`, `refactor`, `test`, etc.) → no bump.
+- A `commit-msg` hook (`.githooks/commit-msg`) bumps the version based on the conventional-commit type: `feat:` → **minor**, `fix:` → **patch**, anything else (`docs`, `chore`, `refactor`, `test`, etc.) → no bump. A `post-commit` hook (`.githooks/post-commit`) then commits that bump as a paired `chore: bump version to X.Y.Z` commit — git hooks can't include the bump in the *same* commit because the message isn't available to the hook that can modify the tree.
 - Manual bump: `npm run version:bump` (patch) or `npm run version:bump:minor` (minor).
-- The hook needs `core.hooksPath` set once per clone: `git config core.hooksPath .githooks`. Skip a bump with `git commit --no-verify`.
+- The hooks need `core.hooksPath` set once per clone: `git config core.hooksPath .githooks`. Skip a bump with `git commit --no-verify`.

@@ -1,0 +1,20 @@
+#!/bin/sh
+# After a feat/fix commit, the commit-msg hook has already bumped the version
+# and staged package.json + src/constants/version.ts. Commit those as a
+# follow-up so the version lands in history and the working tree stays clean.
+# Skipped during a rebase to avoid polluting replayed history.
+
+# Skip while a rebase is in progress.
+if git rev-parse -q --verify REBASE_HEAD >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Only act when the version files are actually staged for commit.
+if git diff --cached --quiet -- package.json src/constants/version.ts; then
+    exit 0
+fi
+
+VERSION="$(sed -n "s/.*APP_VERSION = '\([^']*\)'.*/\1/p" src/constants/version.ts)"
+[ -n "$VERSION" ] || exit 0
+
+git commit --no-verify -q -m "chore: bump version to ${VERSION}"
