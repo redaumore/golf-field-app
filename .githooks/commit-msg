@@ -1,0 +1,39 @@
+#!/bin/sh
+# Bump the app version based on the conventional-commit type of the commit:
+#   feat:  -> minor bump
+#   fix:   -> patch bump
+#   other  -> no bump (docs, chore, refactor, test, etc.)
+MSG_FILE="$1"
+
+# Resolve node robustly (works with nvm-managed installs where node is not on
+# the hook's default PATH).
+NODE="$(command -v node)"
+if [ -z "$NODE" ] && [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+    NODE="$(command -v node)"
+fi
+if [ -z "$NODE" ]; then
+    echo "bump-version: node not found" >&2
+    exit 1
+fi
+
+# Extract the conventional-commit type from the first non-comment line.
+FIRST_LINE="$(grep -v '^#' "$MSG_FILE" | head -n 1)"
+TYPE="$(printf '%s\n' "$FIRST_LINE" | sed -nE 's/^([a-z]+)(\([^)]*\))?!?:.*$/\1/p')"
+
+case "$TYPE" in
+    feat)
+        "$NODE" scripts/bump-version.mjs minor || exit 1
+        git add package.json src/constants/version.ts
+        ;;
+    fix)
+        "$NODE" scripts/bump-version.mjs patch || exit 1
+        git add package.json src/constants/version.ts
+        ;;
+    *)
+        # No version bump for non-feat/fix commits.
+        ;;
+esac
+
+exit 0

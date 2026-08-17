@@ -45,3 +45,11 @@ All routes rewrite to `/index.html` (SPA fallback). Assets in `/assets/` have im
 ## Styling
 
 Tailwind v4 (`@import "tailwindcss"`). Theme system uses CSS custom properties scoped to `[data-theme="modern"]` / `[data-theme="high-contrast"]` — **not** the Tailwind `dark:` variant. Component template classes use `theme-*` utility classes defined in `src/index.css`.
+
+## Versioning
+
+The version lives in **two places, kept in sync**: `package.json` (`version`) and `src/constants/version.ts` (`APP_VERSION`, shown in the UI headers).
+
+- A `commit-msg` hook (`.githooks/commit-msg`, active via `git config core.hooksPath .githooks`) bumps the version based on the conventional-commit type: `feat:` → **minor**, `fix:` → **patch**, anything else (`docs`, `chore`, `refactor`, `test`, etc.) → no bump.
+- Manual bump: `npm run version:bump` (patch) or `npm run version:bump:minor` (minor).
+- The hook needs `core.hooksPath` set once per clone: `git config core.hooksPath .githooks`. Skip a bump with `git commit --no-verify`.
