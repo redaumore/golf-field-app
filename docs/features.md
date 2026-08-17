@@ -113,8 +113,8 @@ Funcionalidades planificadas o solicitadas que aún no se implementaron. Están 
 | P-02 | Cantidad de bolas perdidas | Estadísticas por ronda | ✅ Implementado | Lleva un registro rápido de las pelotas extraviadas o jugadas fuera de límites en cada vuelta, ayudando a identificar el impacto directo de las penalizaciones en el score. | Deriva del palo `LostBall` ya registrado en cada golpe. |
 | P-03 | Mayor distancia obtenida por palo | Estadísticas por ronda | ✅ Implementado | Almacena el golpe más largo ejecutado con éxito para cada palo específico de la bolsa durante la ronda, dando una referencia real del rendimiento máximo del día. | `ShotDetail` ya guarda palo + distancia. |
 | P-04 | Cálculo del hándicap estimado | Perfil del jugador | ✅ Implementado | Calcula y actualiza automáticamente el nivel de juego estimado en función de las últimas rondas completadas de 18 hoyos. | WHS sobre rondas de 18 hoyos. |
-| P-06 | Promedio de bolas perdidas (últimas 5 rondas) | Perfil del jugador | | Indicador estratégico que promedia las pelotas perdidas en los últimos 5 recorridos para evaluar si se están tomando decisiones más seguras en el campo. | Depende de P-02. |
-| P-07 | Mayor distancia histórica por palo (últimas 10 rondas) | Perfil del jugador | | Consolida los tiros más largos logrados con cada palo en las últimas 10 vueltas, permitiendo armar la tabla de distancias máximas reales. | Depende de P-03. |
+| P-06 | Promedio de bolas perdidas (últimas 5 rondas) | Perfil del jugador | ✅ Implementado | Indicador estratégico que promedia las pelotas perdidas en los últimos 5 recorridos para evaluar si se están tomando decisiones más seguras en el campo. | Solo rondas finalizadas de 18 hoyos. Depende de P-02. |
+| P-07 | Mayor distancia histórica por palo (últimas 10 rondas) | Perfil del jugador | ✅ Implementado | Consolida los tiros más largos logrados con cada palo en las últimas 10 vueltas, permitiendo armar la tabla de distancias máximas reales. | Tiros STATS con accuracy ≤20 m y distancia ≤290 y, en rondas finalizadas de 18 hoyos. Depende de P-03. |
 
 ### Fase 2 — Requieren nuevas fuentes de datos
 
