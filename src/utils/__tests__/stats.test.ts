@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countLostBalls, maxDistanceByClub, calculateEstimatedHandicap, calculateHandicapBreakdown, scoreDifferential, adjustedGrossScore } from '../stats';
+import { countLostBalls, maxDistanceByClub, calculateEstimatedHandicap, calculateHandicapBreakdown, scoreDifferential, adjustedGrossScore, averageLostBalls, historicalMaxDistanceByClub } from '../stats';
 import { COURSE_DATA } from '../../data/course';
 import type { HoleScore, Round, ShotDetail } from '../../types';
 
@@ -8,6 +8,7 @@ const makeShot = (club: ShotDetail['club'], distance?: number, isRepresentative 
     distance,
     timestamp: Date.now(),
     isRepresentative,
+    location: { latitude: -34.5, longitude: -58.5, accuracy: 5 },
 });
 
 const makeRound = (id: string, date: Date, scores: Record<number, HoleScore>, isFinished = true): Round => ({
@@ -140,6 +141,65 @@ describe('maxDistanceByClub', () => {
     };
 
     expect(maxDistanceByClub(scores)).toEqual([{ club: '7i', distance: 150 }]);
+  });
+
+  it('excludes shots whose GPS accuracy exceeds 20m', () => {
+    const scores: Record<number, HoleScore> = {
+      1: {
+        holeNumber: 1,
+        approachShots: 3,
+        putts: 2,
+        approachShotsDetails: [
+          makeShot('7i', 140),
+          { ...makeShot('3w', 600), location: { latitude: -34.5, longitude: -58.5, accuracy: 98 } },
+          { ...makeShot('5i', 180), location: { latitude: -34.5, longitude: -58.5, accuracy: 20 } },
+        ],
+      },
+    };
+
+    // 3w 600y is rejected (accuracy 98 > 20); 5i at exactly 20 and 7i (accuracy 5) are kept.
+    expect(maxDistanceByClub(scores)).toEqual([
+      { club: '5i', distance: 180 },
+      { club: '7i', distance: 140 },
+    ]);
+  });
+
+  it('excludes shots with no accuracy (legacy rounds)', () => {
+    const scores: Record<number, HoleScore> = {
+      1: {
+        holeNumber: 1,
+        approachShots: 2,
+        putts: 2,
+        approachShotsDetails: [
+          { ...makeShot('7i', 150), location: { latitude: -34.5, longitude: -58.5 } },
+          makeShot('Pw', 100),
+        ],
+      },
+    };
+
+    // 7i has a location but no accuracy -> excluded; Pw (accuracy 5) is kept.
+    expect(maxDistanceByClub(scores)).toEqual([{ club: 'Pw', distance: 100 }]);
+  });
+
+  it('excludes shots over 290 yards', () => {
+    const scores: Record<number, HoleScore> = {
+      1: {
+        holeNumber: 1,
+        approachShots: 3,
+        putts: 2,
+        approachShotsDetails: [
+          makeShot('7i', 150),
+          makeShot('3w', 320),
+          makeShot('1w', 290),
+        ],
+      },
+    };
+
+    // 3w 320y is rejected (over 290); 1w at exactly 290 and 7i are kept.
+    expect(maxDistanceByClub(scores)).toEqual([
+      { club: '1w', distance: 290 },
+      { club: '7i', distance: 150 },
+    ]);
   });
 });
 
@@ -281,5 +341,225 @@ describe('calculateHandicapBreakdown', () => {
     expect(result.rounds).toHaveLength(3);
     expect(result.rounds.map(r => r.id)).toEqual(['c', 'b', 'a']);
     expect(result.handicap).toBe(6); // best 1 (8) - 2 = 6
+  });
+});
+
+describe('averageLostBalls (P-06)', () => {
+  // Builds a finished, complete 18-hole round with `lost` LostBall shots on hole 1.
+  const finishedRoundWithLostBalls = (id: string, date: Date, lost: number, isFinished = true): Round => {
+    const scores = atParScores();
+    if (lost > 0) {
+      scores[1] = {
+        ...scores[1],
+        approachShots: scores[1].approachShots + lost,
+        approachShotsDetails: Array.from({ length: lost }, () => makeShot('LostBall')),
+      };
+    }
+    return makeRound(id, date, scores, isFinished);
+  };
+
+  it('returns null when there are no rounds', () => {
+    expect(averageLostBalls([], COURSE_DATA)).toBeNull();
+  });
+
+  it('averages lost balls over the last 5 rounds (newest first)', () => {
+    const rounds = [
+      finishedRoundWithLostBalls('r1', new Date('2026-01-01'), 2),
+      finishedRoundWithLostBalls('r2', new Date('2026-02-01'), 0),
+      finishedRoundWithLostBalls('r3', new Date('2026-03-01'), 4),
+      finishedRoundWithLostBalls('r4', new Date('2026-04-01'), 1),
+      finishedRoundWithLostBalls('r5', new Date('2026-05-01'), 3),
+    ];
+    const result = averageLostBalls(rounds, COURSE_DATA);
+    expect(result).not.toBeNull();
+    expect(result!.totalLostBalls).toBe(10);
+    expect(result!.roundsConsidered).toBe(5);
+    expect(result!.average).toBe(2);
+  });
+
+  it('considers only the most recent 5 rounds when more exist', () => {
+    // 6 rounds; the oldest (2 lost balls) must be excluded from the window.
+    const rounds = [
+      finishedRoundWithLostBalls('old', new Date('2026-01-01'), 2),
+      finishedRoundWithLostBalls('r1', new Date('2026-02-01'), 0),
+      finishedRoundWithLostBalls('r2', new Date('2026-03-01'), 0),
+      finishedRoundWithLostBalls('r3', new Date('2026-04-01'), 0),
+      finishedRoundWithLostBalls('r4', new Date('2026-05-01'), 0),
+      finishedRoundWithLostBalls('r5', new Date('2026-06-01'), 0),
+    ];
+    const result = averageLostBalls(rounds, COURSE_DATA);
+    expect(result!.roundsConsidered).toBe(5);
+    expect(result!.totalLostBalls).toBe(0);
+  });
+
+  it('averages over fewer rounds when fewer than 5 exist', () => {
+    const rounds = [
+      finishedRoundWithLostBalls('r1', new Date('2026-01-01'), 2),
+      finishedRoundWithLostBalls('r2', new Date('2026-02-01'), 4),
+    ];
+    const result = averageLostBalls(rounds, COURSE_DATA);
+    expect(result!.roundsConsidered).toBe(2);
+    expect(result!.average).toBe(3);
+  });
+
+  it('excludes rounds that are not finished', () => {
+    const rounds = [
+      finishedRoundWithLostBalls('unfinished', new Date('2026-01-01'), 4, false),
+      finishedRoundWithLostBalls('finished', new Date('2026-02-01'), 2),
+    ];
+    const result = averageLostBalls(rounds, COURSE_DATA);
+    expect(result!.roundsConsidered).toBe(1);
+    expect(result!.totalLostBalls).toBe(2);
+    expect(result!.average).toBe(2);
+  });
+
+  it('excludes finished rounds that did not complete 18 holes', () => {
+    const partialScores: Record<number, HoleScore> = {};
+    COURSE_DATA.slice(0, 9).forEach(hole => {
+      partialScores[hole.number] = { holeNumber: hole.number, approachShots: hole.par - 1, putts: 1 };
+    });
+    const partial = makeRound('partial', new Date('2026-01-01'), partialScores, true);
+    const rounds = [
+      partial,
+      finishedRoundWithLostBalls('full', new Date('2026-02-01'), 3),
+    ];
+    const result = averageLostBalls(rounds, COURSE_DATA);
+    expect(result!.roundsConsidered).toBe(1);
+    expect(result!.totalLostBalls).toBe(3);
+  });
+});
+
+describe('historicalMaxDistanceByClub (P-07)', () => {
+  // Builds a finished, complete 18-hole round with `shots` on hole 1.
+  const roundWithDistances = (id: string, date: Date, shots: ShotDetail[], isFinished = true): Round => {
+    const scores = atParScores();
+    scores[1] = {
+      ...scores[1],
+      approachShotsDetails: shots,
+    };
+    return makeRound(id, date, scores, isFinished);
+  };
+
+  it('returns empty when there are no rounds', () => {
+    expect(historicalMaxDistanceByClub([], COURSE_DATA)).toEqual([]);
+  });
+
+  it('merges the per-club max distance across rounds, with date and hole', () => {
+    const rounds = [
+      roundWithDistances('r1', new Date('2026-01-01'), [makeShot('7i', 140), makeShot('Pw', 80)]),
+      roundWithDistances('r2', new Date('2026-02-01'), [makeShot('7i', 155), makeShot('3w', 210)]),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: '3w', distance: 210, date: new Date('2026-02-01'), holeNumber: 1 },
+      { club: '7i', distance: 155, date: new Date('2026-02-01'), holeNumber: 1 },
+      { club: 'Pw', distance: 80, date: new Date('2026-01-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('only counts representative shots (STATS)', () => {
+    const rounds = [
+      roundWithDistances('r1', new Date('2026-01-01'), [
+        makeShot('7i', 150, true),
+        makeShot('7i', 220, false),
+      ]),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: '7i', distance: 150, date: new Date('2026-01-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('records the round date and hole number of the max distance shot', () => {
+    const scores1 = atParScores();
+    scores1[3] = { ...scores1[3], approachShotsDetails: [makeShot('7i', 140)] }; // hole 3
+    const scores2 = atParScores();
+    scores2[5] = { ...scores2[5], approachShotsDetails: [makeShot('7i', 160)] }; // hole 5, later date
+    const rounds = [
+      makeRound('r1', new Date('2026-01-01'), scores1, true),
+      makeRound('r2', new Date('2026-02-01'), scores2, true),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: '7i', distance: 160, date: new Date('2026-02-01'), holeNumber: 5 },
+    ]);
+  });
+
+  it('excludes shots whose GPS accuracy exceeds 20m', () => {
+    const rounds = [
+      roundWithDistances('r1', new Date('2026-01-01'), [
+        makeShot('7i', 140),
+        { ...makeShot('3w', 600), location: { latitude: -34.5, longitude: -58.5, accuracy: 98 } },
+      ]),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: '7i', distance: 140, date: new Date('2026-01-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('excludes shots with no accuracy (legacy rounds)', () => {
+    const rounds = [
+      roundWithDistances('r1', new Date('2026-01-01'), [
+        { ...makeShot('7i', 150), location: { latitude: -34.5, longitude: -58.5 } },
+        makeShot('Pw', 100),
+      ]),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: 'Pw', distance: 100, date: new Date('2026-01-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('excludes shots over 290 yards', () => {
+    const rounds = [
+      roundWithDistances('r1', new Date('2026-01-01'), [
+        makeShot('3w', 320),
+        makeShot('7i', 150),
+      ]),
+    ];
+    expect(historicalMaxDistanceByClub(rounds, COURSE_DATA)).toEqual([
+      { club: '7i', distance: 150, date: new Date('2026-01-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('considers only the last 10 rounds', () => {
+    // 11 rounds; the oldest round (300y 3w) must be excluded.
+    const rounds = [
+      roundWithDistances('old', new Date('2026-01-01'), [makeShot('3w', 300)]),
+      ...Array.from({ length: 10 }, (_, i) =>
+        roundWithDistances(`r${i + 1}`, new Date(2026, 1, i + 1), [makeShot('7i', 140)])
+      ),
+    ];
+    const result = historicalMaxDistanceByClub(rounds, COURSE_DATA);
+    expect(result).toEqual([
+      { club: '7i', distance: 140, date: new Date(2026, 1, 10), holeNumber: 1 },
+    ]);
+  });
+
+  it('excludes rounds that are not finished', () => {
+    const rounds = [
+      roundWithDistances('unfinished', new Date('2026-01-01'), [makeShot('3w', 300)], false),
+      roundWithDistances('finished', new Date('2026-02-01'), [makeShot('7i', 140)]),
+    ];
+    const result = historicalMaxDistanceByClub(rounds, COURSE_DATA);
+    expect(result).toEqual([
+      { club: '7i', distance: 140, date: new Date('2026-02-01'), holeNumber: 1 },
+    ]);
+  });
+
+  it('excludes finished rounds that did not complete 18 holes', () => {
+    const partialScores: Record<number, HoleScore> = {};
+    COURSE_DATA.slice(0, 9).forEach(hole => {
+      partialScores[hole.number] = { holeNumber: hole.number, approachShots: hole.par - 1, putts: 1 };
+    });
+    partialScores[1] = {
+      ...partialScores[1],
+      approachShotsDetails: [makeShot('3w', 300)],
+    };
+    const partial = makeRound('partial', new Date('2026-01-01'), partialScores, true);
+    const rounds = [
+      partial,
+      roundWithDistances('full', new Date('2026-02-01'), [makeShot('7i', 140)]),
+    ];
+    const result = historicalMaxDistanceByClub(rounds, COURSE_DATA);
+    expect(result).toEqual([
+      { club: '7i', distance: 140, date: new Date('2026-02-01'), holeNumber: 1 },
+    ]);
   });
 });

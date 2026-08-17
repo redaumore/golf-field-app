@@ -1,8 +1,35 @@
-import type { Hole, HoleScore, Round } from '../types';
+import type { Hole, HoleScore, Round, ShotDetail } from '../types';
 
 export interface ClubDistance {
     club: string;
     distance: number;
+}
+
+// Max acceptable GPS accuracy (meters) for a shot's distance to be trusted in
+// club distance stats. Worse fixes (e.g. ~98 m) produce absurd distances.
+export const MAX_DISTANCE_ACCURACY = 20;
+
+// A shot is eligible for distance stats only when its location accuracy is a
+// known value within the threshold. Shots with no accuracy (legacy rounds) are
+// excluded — their distance measurement can't be trusted.
+function hasUsableAccuracy(shot: ShotDetail): boolean {
+    const accuracy = shot.location?.accuracy;
+    return accuracy != null && accuracy <= MAX_DISTANCE_ACCURACY;
+}
+
+// Plausible upper bound for a single golf shot, in yards. Anything above is a
+// bad measurement (bogus GPS distance) and is excluded from club distance stats.
+export const MAX_CLUB_DISTANCE = 290;
+
+// A shot counts toward club distance stats only when all of these hold:
+// a real club (not LostBall), marked STATS, has a distance, within the plausible
+// max, and its GPS accuracy is known and within threshold.
+function isDistanceStatShot(shot: ShotDetail): shot is ShotDetail & { distance: number } {
+    if (shot.club === 'LostBall') return false;
+    if (shot.isRepresentative !== true) return false;
+    if (shot.distance == null) return false;
+    if (shot.distance > MAX_CLUB_DISTANCE) return false;
+    return hasUsableAccuracy(shot);
 }
 
 // Count shots recorded with the 'LostBall' club across all holes.
@@ -29,9 +56,7 @@ export function maxDistanceByClub(scores: Record<number, HoleScore>): ClubDistan
     Object.values(scores).forEach(score => {
         const details = score.approachShotsDetails || [];
         details.forEach(shot => {
-            if (shot.club === 'LostBall') return;
-            if (shot.isRepresentative !== true) return;
-            if (shot.distance == null) return;
+            if (!isDistanceStatShot(shot)) return;
 
             const current = maxByClub.get(shot.club);
             if (current === undefined || shot.distance > current) {
@@ -43,6 +68,13 @@ export function maxDistanceByClub(scores: Record<number, HoleScore>): ClubDistan
     return Array.from(maxByClub.entries())
         .map(([club, distance]) => ({ club, distance: Math.round(distance) }))
         .sort((a, b) => b.distance - a.distance);
+}
+
+// Most recent `window` rounds, newest first.
+function recentRounds(rounds: Round[], window: number): Round[] {
+    return [...rounds]
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .slice(0, window);
 }
 
 // ==== WHS (World Handicap System) estimated handicap ====
@@ -160,9 +192,7 @@ export function calculateHandicapBreakdown(
     const pcc = options.pcc ?? WHS_PCC_DEFAULT;
     const maxRounds = options.maxRounds ?? WHS_MAX_ROUNDS;
 
-    const recent = [...complete]
-        .sort((a, b) => b.date.getTime() - a.date.getTime())
-        .slice(0, maxRounds);
+    const recent = recentRounds(complete, maxRounds);
 
     const details: HandicapRoundDetail[] = recent.map(round => {
         const ags = adjustedGrossScore(round, course);
@@ -212,4 +242,88 @@ export function calculateEstimatedHandicap(
     options: HandicapCalculationOptions = {}
 ): number | null {
     return calculateHandicapBreakdown(rounds, course, options).handicap;
+}
+
+// ==== P-06 / P-07: cross-round aggregates for the player profile ====
+
+export const LOST_BALLS_WINDOW = 5;
+export const MAX_DISTANCE_WINDOW = 10;
+
+export interface LostBallsAverage {
+    average: number;
+    roundsConsidered: number;
+    totalLostBalls: number;
+}
+
+// P-06: average lost balls per round over the last `window` rounds.
+// Only finished rounds that completed all 18 holes are considered.
+export function averageLostBalls(
+    rounds: Round[],
+    course: Hole[],
+    window: number = LOST_BALLS_WINDOW
+): LostBallsAverage | null {
+    const eligible = rounds.filter(round => round.isFinished && isCompleteRound(round, course));
+    const recent = recentRounds(eligible, window);
+    if (recent.length === 0) return null;
+
+    const totalLostBalls = recent.reduce(
+        (sum, round) => sum + countLostBalls(round.scores),
+        0
+    );
+
+    return {
+        average: roundToDecimal(totalLostBalls / recent.length),
+        roundsConsidered: recent.length,
+        totalLostBalls,
+    };
+}
+
+// A single club's best distance plus the round date and hole where it was hit.
+export interface HistoricalClubDistance {
+    club: string;
+    distance: number;
+    date: Date;
+    holeNumber: number;
+}
+
+// P-07: best (max) distance per club across the last `window` rounds, with the
+// round date and hole where each max was recorded. Only finished rounds that
+// completed all 18 holes are considered.
+export function historicalMaxDistanceByClub(
+    rounds: Round[],
+    course: Hole[],
+    window: number = MAX_DISTANCE_WINDOW
+): HistoricalClubDistance[] {
+    const eligible = rounds.filter(round => round.isFinished && isCompleteRound(round, course));
+    const recent = recentRounds(eligible, window);
+
+    // club -> best shot so far (raw distance for comparison, date + hole for display).
+    const best = new Map<string, { club: string; raw: number; date: Date; holeNumber: number }>();
+
+    recent.forEach(round => {
+        Object.values(round.scores).forEach(score => {
+            (score.approachShotsDetails || []).forEach(shot => {
+                if (!isDistanceStatShot(shot)) return;
+
+                const current = best.get(shot.club);
+                if (current === undefined || shot.distance > current.raw) {
+                    best.set(shot.club, {
+                        club: shot.club,
+                        raw: shot.distance,
+                        date: round.date,
+                        holeNumber: score.holeNumber,
+                    });
+                }
+            });
+        });
+    });
+
+    return Array.from(best.values())
+        .map(({ club, raw, date, holeNumber }) => ({
+            club,
+            distance: Math.round(raw),
+            date,
+            holeNumber,
+        }))
+        .sort((a, b) => b.distance - a.distance);
 }

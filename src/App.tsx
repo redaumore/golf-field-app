@@ -13,7 +13,7 @@ import { calculateRelativeScore } from './utils/score';
 import { AppMenu } from './components/AppMenu';
 import { DrivingRange } from './components/DrivingRange';
 import { Profile } from './components/Profile';
-import { calculateHandicapBreakdown } from './utils/stats';
+import { calculateHandicapBreakdown, averageLostBalls, historicalMaxDistanceByClub } from './utils/stats';
 
 const STORAGE_KEY = 'golf-app-rounds';
 const PLAYER_NAME_KEY = 'golf-app-player-name';
@@ -554,6 +554,8 @@ function App() {
 
   const completedRoundsCount = rounds.filter(r => r.isFinished).length;
   const handicapBreakdown = calculateHandicapBreakdown(rounds, COURSE_DATA);
+  const lostBallsAverage = averageLostBalls(rounds, COURSE_DATA);
+  const historicalClubDistances = historicalMaxDistanceByClub(rounds, COURSE_DATA);
 
   return (
     <div className="min-h-screen w-full bg-white">
@@ -611,6 +613,8 @@ function App() {
           playerName={playerName}
           breakdown={handicapBreakdown}
           roundsCount={completedRoundsCount}
+          lostBallsAverage={lostBallsAverage}
+          historicalClubDistances={historicalClubDistances}
           onNameChange={handleNameChange}
           onMenuClick={() => setShowAppMenu(true)}
           onBack={() => setView('rounds')}

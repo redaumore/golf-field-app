@@ -1,20 +1,25 @@
 import React from 'react';
 import { ArrowLeft, Menu } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
-import type { HandicapBreakdown } from '../utils/stats';
+import type { HandicapBreakdown, HistoricalClubDistance, LostBallsAverage } from '../utils/stats';
 
 interface ProfileProps {
     playerName: string;
     breakdown: HandicapBreakdown;
     roundsCount: number;
+    lostBallsAverage: LostBallsAverage | null;
+    historicalClubDistances: HistoricalClubDistance[];
     onNameChange: (name: string) => void;
     onMenuClick: () => void;
     onBack: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsCount, onNameChange, onMenuClick, onBack }) => {
+export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsCount, lostBallsAverage, historicalClubDistances, onNameChange, onMenuClick, onBack }) => {
     const formatHandicap = (handicap: number): string =>
         handicap < 0 ? `+${Math.abs(handicap).toFixed(1)}` : handicap.toFixed(1);
+
+    const formatDate = (date: Date): string =>
+        date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     return (
         <div className="flex flex-col h-screen w-full theme-bg-primary theme-text-primary fixed inset-0">
@@ -88,6 +93,55 @@ export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsC
                                         {round.differential.toFixed(1)}
                                         {round.usedInIndex && <span className="theme-text-accent-green text-xs"> · usada</span>}
                                     </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Promedio de bolas perdidas (últimas 5 rondas) */}
+                <div className="p-4 theme-card rounded-lg border-2 shadow-sm">
+                    <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
+                        Promedio de bolas perdidas
+                    </h3>
+                    {lostBallsAverage === null ? (
+                        <div className="text-4xl font-black theme-text-tertiary">-</div>
+                    ) : (
+                        <div className="text-4xl font-black">{lostBallsAverage.average.toFixed(1)}</div>
+                    )}
+                    <div className="text-xs theme-text-tertiary mt-1">
+                        {lostBallsAverage === null
+                            ? 'Necesitás rondas jugadas para calcular tu promedio'
+                            : `${lostBallsAverage.totalLostBalls} bolas perdidas en tus últimas ${lostBallsAverage.roundsConsidered} rondas`}
+                    </div>
+                </div>
+
+                {/* Mayor distancia histórica por palo (últimas 10 rondas) */}
+                <div className="p-4 theme-card rounded-lg border-2 shadow-sm">
+                    <h3 className="text-sm font-bold uppercase tracking-wider theme-text-secondary mb-3">
+                        Mayor distancia por palo
+                    </h3>
+                    <div className="text-xs theme-text-tertiary mb-3">
+                        Últimas 10 rondas
+                    </div>
+                    {historicalClubDistances.length === 0 ? (
+                        <div className="text-xs theme-text-tertiary italic">
+                            Sin datos de distancia aún
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {historicalClubDistances.map((item) => (
+                                <div
+                                    key={item.club}
+                                    className="flex items-center justify-between p-2 rounded-lg theme-bg-tertiary"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold theme-text-primary">{item.club}</span>
+                                        <span className="text-xs theme-text-tertiary">
+                                            {formatDate(item.date)} · Hoyo {item.holeNumber}
+                                        </span>
+                                    </div>
+                                    <span className="text-lg font-bold font-mono theme-text-primary">{item.distance}y</span>
                                 </div>
                             ))}
                         </div>
