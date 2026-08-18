@@ -21,9 +21,8 @@ interface HoleViewProps {
     guests?: GuestPlayer[];
     onUpdateGuestScore?: (guestId: string, type: 'approach' | 'putt', delta: number) => void;
     onOpenScorecard?: () => void;
+    bagClubs: GolfClub[];
 }
-
-const CLUBS: GolfClub[] = ['1w', '3w', '4i', '5i', '6i', '7i', '8i', '9i', 'Pw', 'Sd', '60', 'LostBall'];
 
 export const HoleView: React.FC<HoleViewProps> = ({
     hole,
@@ -40,6 +39,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     guests,
     onUpdateGuestScore,
     onOpenScorecard,
+    bagClubs,
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
@@ -276,7 +276,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             <div className="space-y-2 pt-2 border-t theme-border-approach opacity-90">
                                 <p className="text-xs text-center theme-text-approach uppercase font-bold tracking-wider mb-2">Select Club</p>
                                 <div className="grid grid-cols-5 gap-2">
-                                    {CLUBS.map(club => (
+                                    {([...bagClubs, 'LostBall'] as GolfClub[]).map(club => (
                                         <button
                                             key={club}
                                             onClick={() => setSelectedClub(club)}

@@ -2,6 +2,8 @@ import React from 'react';
 import { ArrowLeft, Menu } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import type { HandicapBreakdown, HistoricalClubDistance, LostBallsAverage } from '../utils/stats';
+import type { GolfClub } from '../types';
+import { BagManager } from './BagManager';
 
 interface ProfileProps {
     playerName: string;
@@ -9,12 +11,16 @@ interface ProfileProps {
     roundsCount: number;
     lostBallsAverage: LostBallsAverage | null;
     historicalClubDistances: HistoricalClubDistance[];
+    bag: GolfClub[];
+    onAddClub: (club: GolfClub) => void;
+    onRemoveClub: (club: GolfClub) => void;
+    onMoveClub: (fromIndex: number, toIndex: number) => void;
     onNameChange: (name: string) => void;
     onMenuClick: () => void;
     onBack: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsCount, lostBallsAverage, historicalClubDistances, onNameChange, onMenuClick, onBack }) => {
+export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsCount, lostBallsAverage, historicalClubDistances, bag, onAddClub, onRemoveClub, onMoveClub, onNameChange, onMenuClick, onBack }) => {
     const formatHandicap = (handicap: number): string =>
         handicap < 0 ? `+${Math.abs(handicap).toFixed(1)}` : handicap.toFixed(1);
 
@@ -58,6 +64,9 @@ export const Profile: React.FC<ProfileProps> = ({ playerName, breakdown, roundsC
                         className="p-3 rounded-lg border theme-border theme-card theme-text-primary w-full"
                     />
                 </div>
+
+                {/* Mi Bolsa */}
+                <BagManager bag={bag} onAddClub={onAddClub} onRemoveClub={onRemoveClub} onMoveClub={onMoveClub} />
 
                 {/* Hándicap estimado */}
                 <div className="p-4 theme-card rounded-lg border-2 shadow-sm">

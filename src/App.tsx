@@ -14,9 +14,11 @@ import { AppMenu } from './components/AppMenu';
 import { DrivingRange } from './components/DrivingRange';
 import { Profile } from './components/Profile';
 import { calculateHandicapBreakdown, averageLostBalls, historicalMaxDistanceByClub } from './utils/stats';
+import { addClubToBag, removeClubFromBag, normalizeBag, moveClub, DEFAULT_BAG } from './utils/bag';
 
 const STORAGE_KEY = 'golf-app-rounds';
 const PLAYER_NAME_KEY = 'golf-app-player-name';
+const BAG_KEY = 'golf-app-bag';
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
   if (!round) return undefined;
 
@@ -95,6 +97,18 @@ function App() {
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [isEditingRound, setIsEditingRound] = useState(false);
   const [playerName, setPlayerName] = useState<string>(() => localStorage.getItem(PLAYER_NAME_KEY) || '');
+
+  const [bag, setBag] = useState<GolfClub[]>(() => {
+    const raw = localStorage.getItem(BAG_KEY);
+    if (!raw) return DEFAULT_BAG;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return DEFAULT_BAG;
+      return normalizeBag(parsed);
+    } catch {
+      return DEFAULT_BAG;
+    }
+  });
 
   // State for sync conflict handling
   const [syncConflictModalOpen, setSyncConflictModalOpen] = useState(false);
@@ -225,7 +239,16 @@ function App() {
     localStorage.setItem(PLAYER_NAME_KEY, playerName);
   }, [playerName]);
 
+  // Persist bag to localStorage whenever it changes (including empty bag)
+  useEffect(() => {
+    localStorage.setItem(BAG_KEY, JSON.stringify(bag));
+  }, [bag]);
+
   const handleNameChange = (name: string) => setPlayerName(name);
+
+  const handleAddClub = (club: GolfClub) => setBag(prev => addClubToBag(prev, club));
+  const handleRemoveClub = (club: GolfClub) => setBag(prev => removeClubFromBag(prev, club));
+  const handleMoveClub = (fromIndex: number, toIndex: number) => setBag(prev => moveClub(prev, fromIndex, toIndex));
 
   // Generate round ID from current date (dd-mm-yyyy)
   const generateRoundId = (): string => {
@@ -598,6 +621,7 @@ function App() {
           guests={currentRound?.guests}
           onUpdateGuestScore={handleUpdateGuestScore}
           onOpenScorecard={() => setView('scorecard')}
+          bagClubs={bag}
         />
       ) : view === 'scorecard' ? (
         <Scorecard
@@ -615,6 +639,10 @@ function App() {
           roundsCount={completedRoundsCount}
           lostBallsAverage={lostBallsAverage}
           historicalClubDistances={historicalClubDistances}
+          bag={bag}
+          onAddClub={handleAddClub}
+          onRemoveClub={handleRemoveClub}
+          onMoveClub={handleMoveClub}
           onNameChange={handleNameChange}
           onMenuClick={() => setShowAppMenu(true)}
           onBack={() => setView('rounds')}

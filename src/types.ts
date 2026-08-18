@@ -13,7 +13,10 @@ export interface Hole {
   };
 }
 
-export type GolfClub = '1w' | '3w' | '4i' | '5i' | '6i' | '7i' | '8i' | '9i' | 'Pw' | 'Sd' | '60' | 'LostBall';
+// A club identifier. Known clubs (e.g. '7i', 'Pw', '60') come from the fixed
+// catalog, but players can also add custom abbreviations (e.g. 'Hy', '5w').
+// 'LostBall' is a reserved penalty marker, never part of the bag.
+export type GolfClub = string;
 
 export interface GeoLocation {
   latitude: number;
