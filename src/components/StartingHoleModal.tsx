@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Users } from 'lucide-react';
+import { X, Users, MapPin } from 'lucide-react';
 import type { GuestPlayer } from '../types';
+import { COURSES_DATA, DEFAULT_COURSE_ID, getCourseById } from '../data/course';
 
 interface StartingHoleModalProps {
     isOpen: boolean;
-    onConfirm: (holeNumber: number, guests?: GuestPlayer[]) => void;
+    onConfirm: (holeNumber: number, guests?: GuestPlayer[], courseId?: string) => void;
     onCancel: () => void;
 }
 
@@ -13,11 +14,14 @@ export const StartingHoleModal: React.FC<StartingHoleModalProps> = ({
     onConfirm,
     onCancel,
 }) => {
+    const [selectedCourseId, setSelectedCourseId] = useState<string>(DEFAULT_COURSE_ID);
     const [selectedHole, setSelectedHole] = useState<number>(1);
     const [guestCount, setGuestCount] = useState<number>(0);
     const [guestNames, setGuestNames] = useState<string[]>(['', '']);
 
     if (!isOpen) return null;
+
+    const selectedCourse = getCourseById(selectedCourseId);
 
     const handleConfirm = () => {
         let guests: GuestPlayer[] | undefined = undefined;
@@ -28,7 +32,7 @@ export const StartingHoleModal: React.FC<StartingHoleModalProps> = ({
                 scores: {},
             }));
         }
-        onConfirm(selectedHole, guests);
+        onConfirm(selectedHole, guests, selectedCourseId);
     };
 
     const handleNameChange = (index: number, name: string) => {
@@ -56,21 +60,65 @@ export const StartingHoleModal: React.FC<StartingHoleModalProps> = ({
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto space-y-6">
+                    {/* Course Selection */}
                     <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <MapPin size={18} className="theme-text-secondary" />
+                            <label className="text-sm font-semibold theme-text-secondary">
+                                Campo de Golf
+                            </label>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                            {COURSES_DATA.map((c) => {
+                                const isSelected = selectedCourseId === c.id;
+                                return (
+                                    <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCourseId(c.id);
+                                            // Reset selected hole if out of bounds
+                                            if (selectedHole > c.holes.length) {
+                                                setSelectedHole(1);
+                                            }
+                                        }}
+                                        className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${isSelected
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                                : 'bg-gray-50 theme-bg-secondary theme-text-primary border-gray-200 theme-border hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        <div>
+                                            <div className="font-bold text-sm">{c.course_name}</div>
+                                            <div className={`text-xs ${isSelected ? 'text-blue-100' : 'theme-text-tertiary'}`}>
+                                                {c.holes.length} Hoyos • Par {c.par}
+                                            </div>
+                                        </div>
+                                        {isSelected && (
+                                            <div className="w-2.5 h-2.5 rounded-full bg-white shadow-sm"></div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Starting Hole */}
+                    <div className="border-t pt-4 theme-border-secondary">
                         <label className="block text-sm font-semibold theme-text-secondary mb-2 text-center">
                             Hoyo de Salida
                         </label>
                         <div className="grid grid-cols-6 gap-2">
-                            {Array.from({ length: 18 }, (_, i) => i + 1).map((num) => (
+                            {selectedCourse.holes.map((h) => (
                                 <button
-                                    key={num}
-                                    onClick={() => setSelectedHole(num)}
-                                    className={`aspect-square flex items-center justify-center rounded-lg font-bold text-lg transition-all ${selectedHole === num
+                                    key={h.number}
+                                    type="button"
+                                    onClick={() => setSelectedHole(h.number)}
+                                    className={`aspect-square flex items-center justify-center rounded-lg font-bold text-lg transition-all ${selectedHole === h.number
                                             ? 'bg-blue-600 text-white shadow-md scale-105'
                                             : 'bg-gray-100 theme-bg-secondary theme-text-primary hover:bg-gray-200 border theme-border'
                                         }`}
                                 >
-                                    {num}
+                                    {h.number}
                                 </button>
                             ))}
                         </div>
@@ -136,4 +184,3 @@ export const StartingHoleModal: React.FC<StartingHoleModalProps> = ({
         </div>
     );
 };
-

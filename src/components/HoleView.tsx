@@ -12,7 +12,7 @@ interface HoleViewProps {
     onNext: () => void;
     onPrev: () => void;
     onFinishRound: () => void;
-    // onSetTeeLocation removed as it is auto-set
+    onSetTeeLocation?: (location: GeoLocation) => void;
     isFirst: boolean;
     isLast: boolean;
     isReadOnly?: boolean;
@@ -22,7 +22,13 @@ interface HoleViewProps {
     onUpdateGuestScore?: (guestId: string, type: 'approach' | 'putt', delta: number) => void;
     onOpenScorecard?: () => void;
     bagClubs: GolfClub[];
+    courseName?: string;
+    courseId?: string;
 }
+
+const isValidCoord = (loc?: { latitude: number; longitude: number } | null): boolean => {
+    return Boolean(loc && (loc.latitude !== 0 || loc.longitude !== 0));
+};
 
 export const HoleView: React.FC<HoleViewProps> = ({
     hole,
@@ -31,6 +37,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onNext,
     onPrev,
     onFinishRound,
+    onSetTeeLocation,
     isFirst,
     isLast,
     isReadOnly = false,
@@ -40,18 +47,46 @@ export const HoleView: React.FC<HoleViewProps> = ({
     onUpdateGuestScore,
     onOpenScorecard,
     bagClubs,
+    courseName,
+    courseId = '1',
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
     const [isLocating, setIsLocating] = useState(false);
+    const [isMarkingTee, setIsMarkingTee] = useState(false);
     const [isRepresentative, setIsRepresentative] = useState(false);
     const [fairwayHit, setFairwayHit] = useState(false);
     const [showHoleImage, setShowHoleImage] = useState(false);
 
     const totalScore = score.approachShots + score.putts;
 
+    const isTeeLocationZero = !isValidCoord(score.teeLocation);
+    const isCourseTeePredefined = isValidCoord(hole.teeLocation);
 
+    const handleMarkTee = () => {
+        if (!navigator.geolocation) {
+            alert('La geolocalización no está disponible en este dispositivo.');
+            return;
+        }
 
+        setIsMarkingTee(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                onSetTeeLocation?.({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                });
+                setIsMarkingTee(false);
+            },
+            (error) => {
+                console.warn('Geolocation error marking tee:', error);
+                alert('No se pudo obtener la ubicación GPS. Por favor verifica los permisos de ubicación.');
+                setIsMarkingTee(false);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    };
 
     const handleAddApproach = () => {
         if (!selectedClub) return;
@@ -112,13 +147,18 @@ export const HoleView: React.FC<HoleViewProps> = ({
             {/* Header - Fixed at top */}
             <div className="flex items-center justify-between p-4 theme-bg-secondary theme-border border-b shrink-0 z-10 shadow-sm">
                 <div className="flex items-center gap-3">
-
                     <div className="flex flex-col">
-                        <h1 className="text-3xl font-black">Hole {hole.number}</h1>
+                        <div className="flex items-baseline gap-2">
+                            <h1 className="text-3xl font-black">Hole {hole.number}</h1>
+                            {courseName && (
+                                <span className="text-xs font-semibold theme-text-tertiary truncate max-w-[140px]">
+                                    {courseName}
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
-
                         </div>
                     </div>
                 </div>
@@ -151,21 +191,72 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Main Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+
+                {/* Tee GPS Marking Alert / Prompt */}
+                {!isReadOnly && isTeeLocationZero && (
+                    <div className="rounded-2xl p-4 border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="p-2.5 bg-amber-200 dark:bg-amber-800 rounded-xl text-amber-800 dark:text-amber-200 shrink-0">
+                                <MapPin size={22} />
+                            </div>
+                            <div>
+                                <div className="font-bold text-sm">Tee de salida no definido</div>
+                                <div className="text-xs text-amber-700 dark:text-amber-300">
+                                    Marcá tu posición en el tee mediante GPS para medir tus tiros
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleMarkTee}
+                            disabled={isMarkingTee}
+                            className="w-full sm:w-auto px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                        >
+                            {isMarkingTee ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    <span>Obteniendo GPS...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <MapPin size={16} />
+                                    <span>Marcar Tee</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                {/* If Tee is marked by GPS (and was originally zero in course data) */}
+                {!isReadOnly && !isTeeLocationZero && !isCourseTeePredefined && (
+                    <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-emerald-800 dark:text-emerald-200">
+                        <span className="flex items-center gap-1.5 font-semibold">
+                            <CheckCircle size={15} className="text-emerald-600 dark:text-emerald-400" />
+                            Tee de salida marcado {score.teeLocation?.accuracy ? `(±${Math.round(score.teeLocation.accuracy)}m)` : ''}
+                        </span>
+                        <button
+                            onClick={handleMarkTee}
+                            disabled={isMarkingTee}
+                            className="font-bold underline hover:text-emerald-950 dark:hover:text-emerald-100 disabled:opacity-50"
+                        >
+                            {isMarkingTee ? 'Actualizando...' : 'Recalibrar'}
+                        </button>
+                    </div>
+                )}
 
                 {/* Distance & Map Bar */}
-                <div className="flex items-center justify-between mt-2 px-2">
+                <div className="flex items-center justify-between px-2">
                     {(() => {
                         const lastLocation = (() => {
-                            const shotsWithLoc = score.approachShotsDetails?.filter(s => s.location);
+                            const shotsWithLoc = score.approachShotsDetails?.filter(s => isValidCoord(s.location));
                             if (shotsWithLoc && shotsWithLoc.length > 0) {
                                 return shotsWithLoc[shotsWithLoc.length - 1].location;
                             }
-                            return score.teeLocation;
+                            return isValidCoord(score.teeLocation) ? score.teeLocation : undefined;
                         })();
 
-                        const dist = (hole.greenCenter && lastLocation)
-                            ? calculateDistance(lastLocation, hole.greenCenter)
+                        const dist = (isValidCoord(hole.greenCenter) && isValidCoord(lastLocation))
+                            ? calculateDistance(lastLocation!, hole.greenCenter!)
                             : null;
 
                         return (
@@ -191,7 +282,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 </div>
 
                 {/* Total Score Display */}
-                <div className="flex flex-col items-center justify-center pt-2 pb-4">
+                <div className="flex flex-col items-center justify-center pt-2 pb-2">
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col items-center">
                             <div className={`text-6xl font-black ${totalScore === 0 ? 'text-gray-400' : 'theme-text-primary text-black'}`}>
@@ -296,9 +387,6 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 </div>
                             </div>
                         )}
-                        {/* 
-                         No longer showing "Set Tee Location first" warning as it is auto-set
-                        */}
                     </div>
 
                     {/* Putting Section */}
@@ -447,7 +535,10 @@ export const HoleView: React.FC<HoleViewProps> = ({
             {/* Hole Image Modal */}
             {showHoleImage && (
                 <div className="fixed inset-0 z-50 flex flex-col bg-black/95 animate-fade-in">
-                    <div className="flex justify-end p-4 shrink-0">
+                    <div className="flex justify-between items-center p-4 shrink-0 border-b border-white/10">
+                        <span className="text-white font-bold text-lg">
+                            {courseName || 'Campo'} • Hoyo {hole.number}
+                        </span>
                         <button
                             onClick={() => setShowHoleImage(false)}
                             className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
@@ -456,11 +547,22 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         </button>
                     </div>
                     <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
-                        <img
-                            src={`/fields/CdeC/hoyo-${hole.number}.jpg`}
-                            alt={`Hole ${hole.number} Map`}
-                            className="max-w-full max-h-full object-contain rounded-lg"
-                        />
+                        {courseId === '1' ? (
+                            <img
+                                src={`/fields/CdeC/hoyo-${hole.number}.jpg`}
+                                alt={`Hole ${hole.number} Map`}
+                                className="max-w-full max-h-full object-contain rounded-lg"
+                                onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <div className="text-center text-white/70 space-y-2 p-6">
+                                <ImageIcon size={48} className="mx-auto opacity-40" />
+                                <p className="font-semibold text-lg">Mapa no disponible</p>
+                                <p className="text-sm text-white/50">El mapa visual para este campo aún no está disponible.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

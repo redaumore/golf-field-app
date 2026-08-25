@@ -118,7 +118,12 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                                 )}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm">
+                                        <div className="flex items-center gap-3 text-sm flex-wrap">
+                                            {round.courseName && (
+                                                <span className="font-semibold text-xs px-2 py-0.5 rounded-md theme-bg-tertiary theme-text-secondary border theme-border">
+                                                    {round.courseName}
+                                                </span>
+                                            )}
                                             <span className="font-bold theme-text-secondary">
                                                 Score: <span className="theme-text-primary">{round.totalScore || '-'}</span>
                                             </span>

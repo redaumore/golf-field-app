@@ -7,6 +7,7 @@ interface SheetPayload {
     totalScore: number;
     scores: Record<string, unknown>;
     guests?: unknown;
+    courseId?: string;
 }
 
 export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
@@ -22,7 +23,8 @@ export const saveRoundToGoogleSheets = async (round: Round): Promise<void> => {
         date: new Date(round.date).toISOString(),
         totalScore,
         scores: round.scores,
-        guests: round.guests
+        guests: round.guests,
+        courseId: round.courseId || '1'
     };
 
     try {
@@ -126,6 +128,7 @@ export const fetchRoundsFromGoogleSheets = async (): Promise<Round[]> => {
                 date: new Date(item.date as string),
                 scores: (item.scores as Record<number, import('../types').HoleScore>) || {},
                 guests: parsedGuests,
+                courseId: (item.courseId as string) || (item.course_id as string) || '1',
                 currentHoleIndex: 0, // Reset to start for viewed rounds
                 startingHoleNumber: 1, // Default behavior
                 isFinished: true // Assumed finished if stored in sheets

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { COURSE_DATA } from './data/course';
+import { getCourseById, DEFAULT_COURSE_ID } from './data/course';
 import type { View, Round, RoundMetadata, GolfClub, GeoLocation, ShotDetail, GuestPlayer } from './types';
 import { HoleView } from './components/HoleView';
 import { Scorecard } from './components/Scorecard';
@@ -19,10 +19,17 @@ import { addClubToBag, removeClubFromBag, normalizeBag, moveClub, DEFAULT_BAG } 
 const STORAGE_KEY = 'golf-app-rounds';
 const PLAYER_NAME_KEY = 'golf-app-player-name';
 const BAG_KEY = 'golf-app-bag';
+
+const isValidCoord = (loc?: { latitude: number; longitude: number } | null): boolean => {
+  return Boolean(loc && (loc.latitude !== 0 || loc.longitude !== 0));
+};
+
 const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round | undefined => {
   if (!round) return undefined;
 
-  const holeData = COURSE_DATA[holeIndex];
+  const course = getCourseById(round.courseId);
+  const holeData = course.holes[holeIndex];
+  if (!holeData) return round;
   const holeNumber = holeData.number;
 
   // Initialize score object if missing
@@ -33,18 +40,18 @@ const ensureTeeLocation = (round: Round | undefined, holeIndex: number): Round |
     approachShotsDetails: []
   };
 
-  // If teeLocation is already set, do nothing
-  if (currentScore.teeLocation) return round;
+  // If teeLocation is already set with valid coords, do nothing
+  if (isValidCoord(currentScore.teeLocation)) return round;
 
-  // If static tee location exists, use it
-  if (holeData.teeLocation) {
+  // If static non-zero tee location exists in course data, use it
+  if (isValidCoord(holeData.teeLocation)) {
     return {
       ...round,
       scores: {
         ...round.scores,
         [holeNumber]: {
           ...currentScore,
-          teeLocation: { ...holeData.teeLocation } // No accuracy needed as it is optional now
+          teeLocation: { ...holeData.teeLocation! }
         }
       }
     };
@@ -149,6 +156,7 @@ function App() {
         // Convert date strings back to Date objects
         const roundsWithDates = parsed.map((r: Round) => ({
           ...r,
+          courseId: r.courseId || DEFAULT_COURSE_ID,
           date: new Date(r.date),
         }));
         setRounds(roundsWithDates);
@@ -166,14 +174,16 @@ function App() {
         const remoteRounds = await fetchRoundsFromGoogleSheets();
 
         // Read directly from localStorage to check for unsaved rounds
-        // We do this to ensure we are comparing against the "boot" state
         const savedRoundsStr = localStorage.getItem(STORAGE_KEY);
         let localRounds: Round[] = [];
         if (savedRoundsStr) {
           try {
             const parsed = JSON.parse(savedRoundsStr);
-            // Simple cast only for ID check
-            localRounds = parsed.map((r: Round) => ({ ...r, date: new Date(r.date) }));
+            localRounds = parsed.map((r: Round) => ({
+              ...r,
+              courseId: r.courseId || DEFAULT_COURSE_ID,
+              date: new Date(r.date),
+            }));
           } catch (e) { console.error(e); }
         }
 
@@ -192,7 +202,6 @@ function App() {
 
       } catch (error) {
         console.error('Failed to sync rounds:', error);
-        // If sync fails, we keep the localStorage rounds (fallback)
       } finally {
         setIsLoading(false);
       }
@@ -204,11 +213,15 @@ function App() {
   }, []);
 
   const handleKeepLocalRounds = () => {
-    // Merge strategy: Keep all local rounds that are missing from remote + all remote rounds
-    // Essentially: Remote is source of truth for its own IDs. Local is source of truth for new IDs.
     const localRoundsStr = localStorage.getItem(STORAGE_KEY);
     let localRounds: Round[] = [];
-    if (localRoundsStr) try { localRounds = JSON.parse(localRoundsStr).map((r: Round) => ({ ...r, date: new Date(r.date) })); } catch { /* ignore invalid local storage */ }
+    if (localRoundsStr) try {
+      localRounds = JSON.parse(localRoundsStr).map((r: Round) => ({
+        ...r,
+        courseId: r.courseId || DEFAULT_COURSE_ID,
+        date: new Date(r.date),
+      }));
+    } catch { /* ignore invalid local storage */ }
 
     const localOnly = localRounds.filter(local => !pendingRemoteRounds.some(remote => remote.id === local.id));
     const merged = [...pendingRemoteRounds, ...localOnly];
@@ -264,10 +277,11 @@ function App() {
     setShowStartHoleModal(true);
   };
 
-  // Create a new round with selected starting hole
-  const handleStartRoundConfirmed = (startingHole: number, guests?: GuestPlayer[]) => {
+  // Create a new round with selected starting hole and course
+  const handleStartRoundConfirmed = (startingHole: number, guests?: GuestPlayer[], courseId?: string) => {
     setShowStartHoleModal(false);
 
+    const selectedCourseId = courseId || DEFAULT_COURSE_ID;
     const baseId = generateRoundId();
     let newRoundId = baseId;
 
@@ -275,7 +289,6 @@ function App() {
     const roundsToday = rounds.filter(r => r.id === baseId || r.id.startsWith(`${baseId}-`));
 
     if (roundsToday.length > 0) {
-      // If rounds exist, append count to make unique ID
       newRoundId = `${baseId}-${roundsToday.length}`;
     }
 
@@ -289,9 +302,10 @@ function App() {
       startingHoleNumber: startingHole,
       isFinished: false,
       guests: guests,
+      courseId: selectedCourseId,
     };
 
-    // Auto-set tee location for the first hole
+    // Auto-set tee location for the first hole if statically defined
     const roundWithTee = ensureTeeLocation(newRound, startHoleIndex);
     if (roundWithTee) {
       newRound = roundWithTee;
@@ -322,7 +336,6 @@ function App() {
         }));
       }
 
-      // Si la rueda está finalizada, ir directo al scorecard
       setView(round.isFinished ? 'scorecard' : 'play');
     }
   };
@@ -336,7 +349,6 @@ function App() {
 
   // Delete a round
   const handleDeleteRound = async (roundId: string) => {
-    // Optimistic update
     setRounds(prev => prev.filter(r => r.id !== roundId));
 
     if (currentRoundId === roundId) {
@@ -360,7 +372,6 @@ function App() {
   const handleFinishRound = async () => {
     if (!currentRoundId) return;
 
-    // Save to Google Sheets
     const roundToSave = rounds.find(r => r.id === currentRoundId);
     if (roundToSave) {
       const finishedRound = { ...roundToSave, isFinished: true };
@@ -384,21 +395,51 @@ function App() {
     setView(wasEditing ? 'scorecard' : 'rounds');
   };
 
-  // Calculate distance in yards between two coordinates
+  // Set Tee location for the active hole via GPS
+  const handleSetTeeLocation = (location: GeoLocation) => {
+    if (!currentRoundId) return;
 
+    const round = rounds.find(r => r.id === currentRoundId);
+    const course = getCourseById(round?.courseId);
+    const currentHoleData = course.holes[currentHoleIndex];
+    if (!currentHoleData) return;
+    const holeNumber = currentHoleData.number;
 
+    setRounds(prev => prev.map(r => {
+      if (r.id !== currentRoundId) return r;
 
+      const currentScore = r.scores[holeNumber] || {
+        holeNumber,
+        approachShots: 0,
+        putts: 0,
+        approachShotsDetails: []
+      };
+
+      return {
+        ...r,
+        scores: {
+          ...r.scores,
+          [holeNumber]: {
+            ...currentScore,
+            teeLocation: location
+          }
+        }
+      };
+    }));
+  };
 
   // Update score for current round
   const handleUpdateScore = (type: 'approach' | 'putt', delta: number, club?: GolfClub, location?: GeoLocation, isRepresentative?: boolean, fairwayHit?: boolean) => {
     if (!currentRoundId) return;
 
-    const holeNumber = COURSE_DATA[currentHoleIndex].number;
+    const round = rounds.find(r => r.id === currentRoundId);
+    const course = getCourseById(round?.courseId);
+    const holeNumber = course.holes[currentHoleIndex].number;
 
-    setRounds(prev => prev.map(round => {
-      if (round.id !== currentRoundId) return round;
+    setRounds(prev => prev.map(r => {
+      if (r.id !== currentRoundId) return r;
 
-      const currentScore = round.scores[holeNumber] || {
+      const currentScore = r.scores[holeNumber] || {
         holeNumber,
         approachShots: 0,
         putts: 0,
@@ -414,19 +455,19 @@ function App() {
           let distance: number | undefined;
 
           // Calculate distance if we have current location and a previous point (tee or last shot)
-          if (location) {
+          if (location && isValidCoord(location)) {
             const previousShots = newScore.approachShotsDetails || [];
-            let previousLocation = newScore.teeLocation; // Default to Tee
+            let previousLocation = isValidCoord(newScore.teeLocation) ? newScore.teeLocation : undefined;
 
             // If there are previous shots with location, use the last one
             for (let i = previousShots.length - 1; i >= 0; i--) {
-              if (previousShots[i].location) {
+              if (isValidCoord(previousShots[i].location)) {
                 previousLocation = previousShots[i].location;
                 break;
               }
             }
 
-            if (previousLocation) {
+            if (previousLocation && isValidCoord(previousLocation)) {
               distance = calculateDistance(previousLocation, location);
             }
           }
@@ -441,7 +482,6 @@ function App() {
           };
           newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
         } else if (delta < 0) {
-          // Remove last added club if reducing score
           const details = [...(newScore.approachShotsDetails || [])];
           details.pop();
           newScore.approachShotsDetails = details;
@@ -451,8 +491,8 @@ function App() {
       }
 
       return {
-        ...round,
-        scores: { ...round.scores, [holeNumber]: newScore },
+        ...r,
+        scores: { ...r.scores, [holeNumber]: newScore },
       };
     }));
   };
@@ -461,12 +501,14 @@ function App() {
   const handleUpdateGuestScore = (guestId: string, type: 'approach' | 'putt', delta: number) => {
     if (!currentRoundId) return;
 
-    const holeNumber = COURSE_DATA[currentHoleIndex].number;
+    const round = rounds.find(r => r.id === currentRoundId);
+    const course = getCourseById(round?.courseId);
+    const holeNumber = course.holes[currentHoleIndex].number;
 
-    setRounds(prev => prev.map(round => {
-      if (round.id !== currentRoundId || !round.guests) return round;
+    setRounds(prev => prev.map(r => {
+      if (r.id !== currentRoundId || !r.guests) return r;
 
-      const updatedGuests = round.guests.map(guest => {
+      const updatedGuests = r.guests.map(guest => {
         if (guest.id !== guestId) return guest;
 
         const currentGuestScore = guest.scores[holeNumber] || { approachShots: 0, putts: 0 };
@@ -488,7 +530,7 @@ function App() {
       });
 
       return {
-        ...round,
+        ...r,
         guests: updatedGuests
       };
     }));
@@ -496,36 +538,36 @@ function App() {
 
   // Navigate to next hole (Circular)
   const handleNext = () => {
-    const nextIndex = (currentHoleIndex + 1) % COURSE_DATA.length;
+    const course = getCourseById(currentRound?.courseId);
+    const nextIndex = (currentHoleIndex + 1) % course.holes.length;
     setCurrentHoleIndex(nextIndex);
 
-    // Update current hole index in the round and ensure tee location for next hole
     if (currentRoundId) {
-      setRounds(prev => prev.map(round => {
-        if (round.id === currentRoundId) {
-          const updatedRound = { ...round, currentHoleIndex: nextIndex };
+      setRounds(prev => prev.map(r => {
+        if (r.id === currentRoundId) {
+          const updatedRound = { ...r, currentHoleIndex: nextIndex };
           const roundWithTee = ensureTeeLocation(updatedRound, nextIndex);
           return roundWithTee || updatedRound;
         }
-        return round;
+        return r;
       }));
     }
   };
 
   // Navigate to previous hole (Circular)
   const handlePrev = () => {
-    const prevIndex = (currentHoleIndex - 1 + COURSE_DATA.length) % COURSE_DATA.length;
+    const course = getCourseById(currentRound?.courseId);
+    const prevIndex = (currentHoleIndex - 1 + course.holes.length) % course.holes.length;
     setCurrentHoleIndex(prevIndex);
 
-    // Update current hole index in the round and ensure tee location for prev hole
     if (currentRoundId) {
-      setRounds(prev => prev.map(round => {
-        if (round.id === currentRoundId) {
-          const updatedRound = { ...round, currentHoleIndex: prevIndex };
+      setRounds(prev => prev.map(r => {
+        if (r.id === currentRoundId) {
+          const updatedRound = { ...r, currentHoleIndex: prevIndex };
           const roundWithTee = ensureTeeLocation(updatedRound, prevIndex);
           return roundWithTee || updatedRound;
         }
-        return round;
+        return r;
       }));
     }
   };
@@ -533,32 +575,36 @@ function App() {
   // Get rounds metadata for the manager
   const getRoundsMetadata = (): RoundMetadata[] => {
     return rounds.map(round => {
+      const course = getCourseById(round.courseId);
       const totalScore = Object.values(round.scores).reduce(
         (acc, score) => acc + score.approachShots + score.putts,
         0
       );
-      // Una rueda está completa si jugó los 18 hoyos O si la finalizó manualmente
-      const isComplete = round.isFinished || Object.keys(round.scores).length === COURSE_DATA.length;
+      const isComplete = round.isFinished || Object.keys(round.scores).length === course.holes.length;
 
       return {
         id: round.id,
         date: round.date,
         totalScore,
         isComplete,
+        courseName: course.course_name,
+        courseId: course.id,
       };
     });
   };
 
-  // Get current round data
+  // Get current round and active course data
   const currentRound = currentRoundId
     ? rounds.find(r => r.id === currentRoundId)
     : null;
+
+  const currentCourse = getCourseById(currentRound?.courseId);
 
   const isCurrentRoundComplete = currentRound
     ? currentRound.isFinished
     : false;
 
-  const currentHole = COURSE_DATA[currentHoleIndex];
+  const currentHole = currentCourse.holes[currentHoleIndex] || currentCourse.holes[0];
   const currentScore = currentRound?.scores[currentHole.number] || {
     holeNumber: currentHole.number,
     approachShots: 0,
@@ -570,15 +616,13 @@ function App() {
   const startingHoleIndex = startingHole - 1;
 
   // Calculate strict isFirst/isLast for navigation bounds based on starting hole
-  // isFirst: matches start hole
-  // isLast: is the hole immediately preceding the start hole in the circle
   const isFirst = currentHoleIndex === startingHoleIndex;
-  const isLast = (currentHoleIndex + 1) % COURSE_DATA.length === startingHoleIndex;
+  const isLast = (currentHoleIndex + 1) % currentCourse.holes.length === startingHoleIndex;
 
   const completedRoundsCount = rounds.filter(r => r.isFinished).length;
-  const handicapBreakdown = calculateHandicapBreakdown(rounds, COURSE_DATA);
-  const lostBallsAverage = averageLostBalls(rounds, COURSE_DATA);
-  const historicalClubDistances = historicalMaxDistanceByClub(rounds, COURSE_DATA);
+  const handicapBreakdown = calculateHandicapBreakdown(rounds);
+  const lostBallsAverage = averageLostBalls(rounds);
+  const historicalClubDistances = historicalMaxDistanceByClub(rounds);
 
   return (
     <div className="min-h-screen w-full bg-white">
@@ -594,7 +638,7 @@ function App() {
           onSyncRound={async (roundId) => {
             const round = rounds.find(r => r.id === roundId);
             if (round) {
-              const roundToSave = { ...round, isFinished: true }; // Ensure it's marked as finished on sync
+              const roundToSave = { ...round, isFinished: true };
               try {
                 await saveRoundToGoogleSheets(roundToSave);
                 showInfo('Sync Successful', 'Round synced to cloud.', 'success');
@@ -614,23 +658,27 @@ function App() {
           onNext={handleNext}
           onPrev={handlePrev}
           onFinishRound={handleFinishRound}
+          onSetTeeLocation={handleSetTeeLocation}
           isFirst={isFirst}
           isLast={isLast}
           isReadOnly={isCurrentRoundComplete && !isEditingRound}
-          relativeScore={calculateRelativeScore(COURSE_DATA, currentRound?.scores || {})}
+          relativeScore={calculateRelativeScore(currentCourse.holes, currentRound?.scores || {})}
           guests={currentRound?.guests}
           onUpdateGuestScore={handleUpdateGuestScore}
           onOpenScorecard={() => setView('scorecard')}
           bagClubs={bag}
+          courseName={currentCourse.course_name}
+          courseId={currentCourse.id}
         />
       ) : view === 'scorecard' ? (
         <Scorecard
           onMenuClick={() => setShowAppMenu(true)}
-          course={COURSE_DATA}
+          course={currentCourse.holes}
           scores={currentRound?.scores || {}}
           guests={currentRound?.guests}
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
           onEditHole={handleEditHole}
+          courseName={currentCourse.course_name}
         />
       ) : view === 'profile' ? (
         <Profile

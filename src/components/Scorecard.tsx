@@ -13,9 +13,10 @@ interface ScorecardProps {
     onMenuClick: () => void;
     guests?: GuestPlayer[];
     onEditHole?: (holeNumber: number) => void;
+    courseName?: string;
 }
 
-export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests, onEditHole }) => {
+export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests, onEditHole, courseName }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>('main');
 
@@ -75,7 +76,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                     <button onClick={onBack} className="p-2 mr-4 theme-btn-primary rounded-full shadow-sm">
                         <ArrowLeft size={24} />
                     </button>
-                    <h1 className="text-2xl font-bold">Scorecard</h1>
+                    <div>
+                        <h1 className="text-2xl font-bold">Scorecard</h1>
+                        {courseName && (
+                            <p className="text-xs font-semibold theme-text-secondary">{courseName}</p>
+                        )}
+                    </div>
                 </div>
                 <button
                     onClick={onMenuClick}

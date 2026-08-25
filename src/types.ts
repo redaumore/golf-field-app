@@ -13,6 +13,13 @@ export interface Hole {
   };
 }
 
+export interface Course {
+  id: string;
+  course_name: string;
+  par: number;
+  holes: Hole[];
+}
+
 // A club identifier. Known clubs (e.g. '7i', 'Pw', '60') come from the fixed
 // catalog, but players can also add custom abbreviations (e.g. 'Hy', '5w').
 // 'LostBall' is a reserved penalty marker, never part of the bag.
@@ -60,6 +67,7 @@ export interface Round {
   startingHoleNumber?: number; // Hoyo inicial de la ronda (1-18)
   isFinished: boolean; // Marca si el jugador finalizó manualmente la rueda
   guests?: GuestPlayer[];
+  courseId?: string; // ID del campo ("1", "2", etc.)
 }
 
 export interface RoundMetadata {
@@ -67,6 +75,8 @@ export interface RoundMetadata {
   date: Date;
   totalScore: number;
   isComplete: boolean;
+  courseName?: string;
+  courseId?: string;
 }
 
 export type View = 'rounds' | 'play' | 'scorecard' | 'driving' | 'profile';

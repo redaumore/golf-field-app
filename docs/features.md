@@ -13,8 +13,9 @@ Inventario de la funcionalidad de la aplicación. Este documento distingue lo qu
 
 | Funcionalidad | Descripción |
 |---|---|
-| Listado de rondas | Pantalla principal que muestra cada ronda: fecha, golpes totales y estado (En curso / Completada), ordenadas de más reciente a más antigua. |
-| Iniciar nueva ronda | Abre el modal de hoyo inicial (hoyo 1, shotgun o salida desde el 10), crea la ronda y pasa a la vista de juego. |
+| Listado de rondas | Pantalla principal que muestra cada ronda: fecha, campo de golf, golpes totales y estado (En curso / Completada), ordenadas de más reciente a más antigua. |
+| Iniciar nueva ronda | Abre el modal de configuración de ronda para seleccionar el campo de golf (con Cabeza de Caballo por defecto) y hoyo inicial (1, shotgun o 10), crea la ronda y pasa a la vista de juego. |
+| Soporte multi-campo | Permite jugar en diferentes campos definidos en la base de datos (`course.ts`), asociando cada ronda a su campo y adaptando pares, hoyos y distancias. |
 | IDs de ronda por fecha | Las rondas se identifican por fecha (`dd-mm-yyyy`), con sufijo `-N` para múltiples rondas el mismo día. |
 | Reanudar / ver ronda | Reanuda una ronda en curso en el hoyo guardado; las rondas completadas abren directo al scorecard. |
 | Eliminar ronda | Elimina una ronda localmente y en la nube, tras confirmación. |
@@ -26,7 +27,7 @@ Inventario de la funcionalidad de la aplicación. Este documento distingue lo qu
 | Funcionalidad | Descripción |
 |---|---|
 | Contadores de golpes | Contadores separados para approaches y putts (mínimo 0). |
-| Grilla de selección de palo | Selecciona el palo utilizado entre 12 opciones (`1w 3w 4i–9i Pw Sd 60 LostBall`); los approaches requieren palo seleccionado. |
+| Grilla de selección de palo | Selecciona el palo utilizado entre las opciones de la bolsa más `LostBall`; los approaches requieren palo seleccionado. |
 | Manejo de bola perdida | Registra el golpe de penalidad sin ubicación GPS. |
 | Registro de golpes con GPS | Geolocalización de alta precisión registra las coordenadas de cada approach, con fallback cuando falla la ubicación. |
 | Detalle de golpes | Cada approach guarda palo, timestamp, ubicación, distancia calculada y flag de estadística. |
@@ -35,8 +36,8 @@ Inventario de la funcionalidad de la aplicación. Este documento distingue lo qu
 | Flag de estadística | Marca un golpe como representativo (STATS) o excluido (NO STATS) para las estadísticas. |
 | Navegación circular de hoyos | Anterior / Siguiente envuelve entre los hoyos 1–18, acotado por el hoyo inicial. |
 | Finalizar ronda | Confirma, guarda en Google Sheets, marca la ronda completada y vuelve al listado. |
-| Mapa del hoyo | Imagen a pantalla completa del hoyo actual (`/fields/CdeC/hoyo-N.jpg`). |
-| Posición de tee automática | Las coordenadas del tee se inyectan desde los datos del campo al crear, navegar o reanudar una ronda. |
+| Mapa del hoyo | Imagen a pantalla completa del hoyo actual (`/fields/CdeC/hoyo-N.jpg` con fallback para campos sin mapa). |
+| Posición de tee automática y GPS | Las coordenadas del tee se inyectan automáticamente si existen en el campo; si están en cero, permite marcarlas mediante GPS en el momento de jugar el hoyo. |
 | Editar ronda completada | Reabre una ronda completada en modo edición desde el scorecard y la resincroniza. |
 
 ### Scorecard y estadísticas

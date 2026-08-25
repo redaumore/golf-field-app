@@ -1,8 +1,16 @@
 import type { Hole, HoleScore, Round, ShotDetail } from '../types';
+import { getCourseById } from '../data/course';
 
 export interface ClubDistance {
     club: string;
     distance: number;
+}
+
+function getCourseForRound(round: Round, fallbackCourse?: Hole[]): Hole[] {
+    if (round.courseId) {
+        return getCourseById(round.courseId).holes;
+    }
+    return fallbackCourse || getCourseById().holes;
 }
 
 // Max acceptable GPS accuracy (meters) for a shot's distance to be trusted in
@@ -128,10 +136,11 @@ function grossScore(round: Round): number {
 }
 
 // Adjusted Gross Score: per-hole score capped at net double bogey (par + 2).
-export function adjustedGrossScore(round: Round, course: Hole[]): number {
+export function adjustedGrossScore(round: Round, course?: Hole[]): number {
+    const courseHoles = getCourseForRound(round, course);
     let ags = 0;
     Object.values(round.scores).forEach(score => {
-        const hole = course.find(h => h.number === score.holeNumber);
+        const hole = courseHoles.find(h => h.number === score.holeNumber);
         const total = score.approachShots + score.putts;
         if (total > 0 && hole) {
             ags += Math.min(total, netDoubleBogey(hole));
@@ -173,8 +182,9 @@ function roundToDecimal(value: number, decimals = 1): number {
 }
 
 // A round is a complete 18-hole round when all 18 holes have recorded shots.
-function isCompleteRound(round: Round, course: Hole[]): boolean {
-    return course.every(hole => {
+function isCompleteRound(round: Round, course?: Hole[]): boolean {
+    const courseHoles = getCourseForRound(round, course);
+    return courseHoles.every(hole => {
         const score = round.scores[hole.number];
         const holeTotal = score ? score.approachShots + score.putts : 0;
         return holeTotal > 0;
@@ -183,11 +193,10 @@ function isCompleteRound(round: Round, course: Hole[]): boolean {
 
 export function calculateHandicapBreakdown(
     rounds: Round[],
-    course: Hole[],
+    course?: Hole[],
     options: HandicapCalculationOptions = {}
 ): HandicapBreakdown {
     const complete = rounds.filter(r => isCompleteRound(r, course));
-    const courseRating = options.courseRating ?? coursePar(course);
     const slopeRating = options.slopeRating ?? WHS_SLOPE_DEFAULT;
     const pcc = options.pcc ?? WHS_PCC_DEFAULT;
     const maxRounds = options.maxRounds ?? WHS_MAX_ROUNDS;
@@ -195,13 +204,15 @@ export function calculateHandicapBreakdown(
     const recent = recentRounds(complete, maxRounds);
 
     const details: HandicapRoundDetail[] = recent.map(round => {
-        const ags = adjustedGrossScore(round, course);
+        const courseHoles = getCourseForRound(round, course);
+        const ags = adjustedGrossScore(round, courseHoles);
+        const roundCourseRating = options.courseRating ?? coursePar(courseHoles);
         return {
             id: round.id,
             date: round.date,
             grossScore: grossScore(round),
             adjustedGrossScore: ags,
-            differential: roundToDecimal(scoreDifferential(ags, courseRating, slopeRating, pcc)),
+            differential: roundToDecimal(scoreDifferential(ags, roundCourseRating, slopeRating, pcc)),
             usedInIndex: false,
         };
     });
@@ -238,7 +249,7 @@ export function calculateHandicapBreakdown(
 
 export function calculateEstimatedHandicap(
     rounds: Round[],
-    course: Hole[],
+    course?: Hole[],
     options: HandicapCalculationOptions = {}
 ): number | null {
     return calculateHandicapBreakdown(rounds, course, options).handicap;
@@ -259,7 +270,7 @@ export interface LostBallsAverage {
 // Only finished rounds that completed all 18 holes are considered.
 export function averageLostBalls(
     rounds: Round[],
-    course: Hole[],
+    course?: Hole[],
     window: number = LOST_BALLS_WINDOW
 ): LostBallsAverage | null {
     const eligible = rounds.filter(round => round.isFinished && isCompleteRound(round, course));
@@ -291,7 +302,7 @@ export interface HistoricalClubDistance {
 // completed all 18 holes are considered.
 export function historicalMaxDistanceByClub(
     rounds: Round[],
-    course: Hole[],
+    course?: Hole[],
     window: number = MAX_DISTANCE_WINDOW
 ): HistoricalClubDistance[] {
     const eligible = rounds.filter(round => round.isFinished && isCompleteRound(round, course));
