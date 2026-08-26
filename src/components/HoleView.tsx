@@ -188,14 +188,14 @@ export const HoleView: React.FC<HoleViewProps> = ({
             </div>
 
             {/* Main Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
 
                 {/* Tee GPS Marking Alert / Prompt */}
                 {!isReadOnly && isTeeLocationZero && (
-                    <div className="rounded-2xl p-4 border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200">
+                    <div className="rounded-2xl p-3 border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in fade-in duration-200">
                         <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <div className="p-2.5 bg-amber-200 dark:bg-amber-800 rounded-xl text-amber-800 dark:text-amber-200 shrink-0">
-                                <MapPin size={22} />
+                            <div className="p-2 bg-amber-200 dark:bg-amber-800 rounded-xl text-amber-800 dark:text-amber-200 shrink-0">
+                                <MapPin size={20} />
                             </div>
                             <div>
                                 <div className="font-bold text-sm">Tee de salida no definido</div>
@@ -207,16 +207,16 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <button
                             onClick={handleMarkTee}
                             disabled={isMarkingTee}
-                            className="w-full sm:w-auto px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                            className="w-full sm:w-auto px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
                         >
                             {isMarkingTee ? (
                                 <>
-                                    <Loader2 size={16} className="animate-spin" />
+                                    <Loader2 size={14} className="animate-spin" />
                                     <span>Obteniendo GPS...</span>
                                 </>
                             ) : (
                                 <>
-                                    <MapPin size={16} />
+                                    <MapPin size={14} />
                                     <span>Marcar Tee</span>
                                 </>
                             )}
@@ -226,9 +226,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
                 {/* If Tee is marked by GPS (and was originally zero in course data) */}
                 {!isReadOnly && !isTeeLocationZero && !isCourseTeePredefined && (
-                    <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-emerald-800 dark:text-emerald-200">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-emerald-800 dark:text-emerald-200">
                         <span className="flex items-center gap-1.5 font-semibold">
-                            <CheckCircle size={15} className="text-emerald-600 dark:text-emerald-400" />
+                            <CheckCircle size={14} className="text-emerald-600 dark:text-emerald-400" />
                             Tee de salida marcado {score.teeLocation?.accuracy ? `(±${Math.round(score.teeLocation.accuracy)}m)` : ''}
                         </span>
                         <button
@@ -242,54 +242,54 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 )}
 
                 {/* Total Score Display */}
-                <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                <div className="flex flex-col items-center justify-center py-1">
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col items-center">
-                            <div className={`text-6xl font-black ${totalScore === 0 ? 'text-gray-400' : 'theme-text-primary text-black'}`}>
+                            <div className={`text-4xl font-black ${totalScore === 0 ? 'text-gray-400' : 'theme-text-primary text-black'}`}>
                                 {totalScore === 0 ? '-' : totalScore}
                             </div>
-                            <div className="text-[10px] font-bold theme-text-secondary uppercase tracking-widest mt-1">Strokes</div>
+                            <div className="text-[9px] font-bold theme-text-secondary uppercase tracking-widest mt-0.5">Strokes</div>
                         </div>
 
-                        <div className="w-px h-12 bg-gray-200 dark:bg-gray-700 mx-2"></div>
+                        <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-2"></div>
 
                         <div className="flex flex-col items-center">
-                            <div className={`text-6xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
+                            <div className={`text-4xl font-black ${relativeScore === 0 ? 'theme-text-accent-blue' : relativeScore < 0 ? 'theme-text-accent-red' : 'theme-text-primary'
                                 }`}>
                                 {relativeScore > 0 ? `+${relativeScore}` : relativeScore === 0 ? 'E' : relativeScore}
                             </div>
-                            <div className="text-[10px] font-bold theme-text-secondary uppercase tracking-widest mt-1">To Par</div>
+                            <div className="text-[9px] font-bold theme-text-secondary uppercase tracking-widest mt-0.5">To Par</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div className={`grid grid-cols-1 gap-6 ${isReadOnly ? 'opacity-80' : ''}`}>
+                <div className={`grid grid-cols-1 gap-3 ${isReadOnly ? 'opacity-80' : ''}`}>
 
                     {/* Approach Section */}
-                    <div className={`theme-card-approach rounded-2xl p-4 border-2 space-y-4`}>
-                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide">Approach</div>
+                    <div className="theme-card-approach rounded-2xl p-3 border-2 space-y-2.5">
+                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide text-xs">Approach</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('approach', -1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                className="w-12 h-12 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
                                 disabled={isReadOnly || score.approachShots <= 0 || isLocating}
                             >
                                 -
                             </button>
-                            <span className="text-5xl font-black theme-text-approach w-20 text-center">{score.approachShots}</span>
-                            <div className="flex items-center gap-2">
+                            <span className="text-4xl font-black theme-text-approach w-16 text-center">{score.approachShots}</span>
+                            <div className="flex items-center gap-1.5">
                                 {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && score.approachShots === 0 && hole.par >= 4 && (
                                     <button
                                         onClick={() => setFairwayHit(!fairwayHit)}
-                                        className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${fairwayHit
+                                        className={`flex flex-col items-center justify-center w-10 h-10 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${fairwayHit
                                             ? 'bg-green-100 border-green-500 text-green-700'
                                             : 'bg-gray-50 border-gray-300 text-gray-400'
                                             }`}
                                         title={fairwayHit ? 'Fairway hit' : 'Missed fairway (Rough / Penalty)'}
                                     >
-                                        <Target size={20} className={fairwayHit ? '' : 'opacity-40'} />
-                                        <span className="text-[8px] font-black mt-0.5 tracking-tighter leading-none">
+                                        <Target size={16} className={fairwayHit ? '' : 'opacity-40'} />
+                                        <span className="text-[7px] font-black mt-0.5 tracking-tighter leading-none">
                                             {fairwayHit ? 'FAIRWAY' : 'MISS'}
                                         </span>
                                     </button>
@@ -297,51 +297,50 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && (
                                     <button
                                         onClick={() => setIsRepresentative(!isRepresentative)}
-                                        className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${isRepresentative
+                                        className={`flex flex-col items-center justify-center w-10 h-10 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${isRepresentative
                                             ? 'bg-green-100 border-green-500 text-green-700'
                                             : 'bg-gray-50 border-gray-300 text-gray-400'
                                             }`}
                                         title={isRepresentative ? 'Representative shot for stats' : 'Exclude from stats (Bad shot / Recovery)'}
                                     >
-                                        <BarChart2 size={20} className={isRepresentative ? '' : 'opacity-40'} />
-                                        <span className="text-[8px] font-black mt-0.5 tracking-tighter leading-none">
+                                        <BarChart2 size={16} className={isRepresentative ? '' : 'opacity-40'} />
+                                        <span className="text-[7px] font-black mt-0.5 tracking-tighter leading-none">
                                             {isRepresentative ? 'STATS' : 'NO STATS'}
                                         </span>
                                     </button>
                                 )}
                                 <button
                                     onClick={handleAddApproach}
-                                    className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold border-2 ${selectedClub
+                                    className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-transform text-2xl font-bold border-2 ${selectedClub
                                         ? 'theme-btn-approach border-current'
                                         : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'
                                         }`}
                                     disabled={isReadOnly || !selectedClub || isLocating}
                                 >
-                                    {isLocating ? <Loader2 className="animate-spin" size={24} /> : '+'}
+                                    {isLocating ? <Loader2 className="animate-spin" size={20} /> : '+'}
                                 </button>
                             </div>
                         </div>
 
                         {/* Club Selection Grid */}
                         {!isReadOnly && (
-                            <div className="space-y-2 pt-2 border-t theme-border-approach opacity-90">
-                                <p className="text-xs text-center theme-text-approach uppercase font-bold tracking-wider mb-2">Select Club</p>
-                                <div className="grid grid-cols-5 gap-2">
+                            <div className="pt-2 border-t theme-border-approach opacity-90">
+                                <div className="grid grid-cols-5 gap-1.5">
                                     {([...bagClubs, 'LostBall'] as GolfClub[]).map(club => (
                                         <button
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
-                                            className={`py-2 px-1 rounded-lg text-sm font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
+                                            className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
                                                 ? club === 'LostBall'
-                                                    ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-2 ring-red-200 scale-105'
-                                                    : 'theme-btn-approach ring-2 ring-offset-2 ring-blue-400 scale-105'
+                                                    ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-1 ring-red-200 scale-105'
+                                                    : 'theme-btn-approach ring-2 ring-offset-1 ring-blue-400 scale-105'
                                                 : club === 'LostBall'
                                                     ? 'bg-red-50 text-red-400 border-red-100 hover:border-red-300'
                                                     : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
                                                 }`}
                                             title={club === 'LostBall' ? "Lost Ball (Penalty)" : club}
                                         >
-                                            {club === 'LostBall' ? <XCircle size={16} /> : club}
+                                            {club === 'LostBall' ? <XCircle size={14} /> : club}
                                         </button>
                                     ))}
                                 </div>
@@ -350,20 +349,20 @@ export const HoleView: React.FC<HoleViewProps> = ({
                     </div>
 
                     {/* Putting Section */}
-                    <div className="theme-card-putt rounded-2xl p-4 border-2">
-                        <div className="text-center mb-4 font-bold theme-text-putt uppercase tracking-wide">Putting (Green)</div>
+                    <div className="theme-card-putt rounded-2xl p-3 border-2">
+                        <div className="text-center mb-2 font-bold theme-text-putt uppercase tracking-wide text-xs">Putting (Green)</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('putt', -1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                className="w-12 h-12 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
                                 disabled={isReadOnly || score.putts <= 0}
                             >
                                 -
                             </button>
-                            <span className="text-5xl font-black theme-text-putt w-20 text-center">{score.putts}</span>
+                            <span className="text-4xl font-black theme-text-putt w-16 text-center">{score.putts}</span>
                             <button
                                 onClick={() => onUpdateScore('putt', 1)}
-                                className="w-16 h-16 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-3xl font-bold disabled:opacity-50 disabled:active:scale-100"
+                                className="w-12 h-12 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
                                 disabled={isReadOnly}
                             >
                                 +
