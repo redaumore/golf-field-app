@@ -41,6 +41,24 @@ describe('calculateRelativeScore', () => {
     // 9 odd holes -> +9
     expect(calculateRelativeScore(COURSE_DATA, scores)).toBe(9);
   });
+
+  it('excludes the active hole when excludeHoleNumber is provided', () => {
+    const scores: Record<number, HoleScore> = {
+      1: { holeNumber: 1, approachShots: 3, putts: 2 }, // Hole 1 (Par 4, 5 shots -> +1)
+      2: { holeNumber: 2, approachShots: 1, putts: 0 }, // Hole 2 in progress (Par 4, 1 shot)
+    };
+    // Exclude Hole 2 (active hole): only Hole 1 counts -> +1
+    expect(calculateRelativeScore(COURSE_DATA, scores, 2)).toBe(1);
+    // Exclude Hole 1: only Hole 2 counts -> 1 - 4 = -3
+    expect(calculateRelativeScore(COURSE_DATA, scores, 1)).toBe(-3);
+  });
+
+  it('returns 0 for Hole 1 in progress when excluding Hole 1', () => {
+    const scores: Record<number, HoleScore> = {
+      1: { holeNumber: 1, approachShots: 1, putts: 0 }, // 1 shot on Hole 1
+    };
+    expect(calculateRelativeScore(COURSE_DATA, scores, 1)).toBe(0);
+  });
 });
 
 describe('calculateScoreDistribution', () => {
@@ -79,5 +97,17 @@ describe('calculateScoreDistribution', () => {
       tripleBogeys: 1,
       otherBogeys: 1,
     });
+  });
+
+  it('excludes active hole from score distribution when excludeHoleNumber is passed', () => {
+    const scores: Record<number, HoleScore> = {
+      1: { holeNumber: 1, approachShots: 2, putts: 1 }, // Par 4, score 3 (Birdie)
+      2: { holeNumber: 2, approachShots: 2, putts: 1 }, // Par 4, score 3 (Birdie)
+      3: { holeNumber: 3, approachShots: 1, putts: 0 }, // Par 3, 1 shot in progress (would be Eagle if not excluded)
+    };
+
+    const dist = calculateScoreDistribution(COURSE_DATA, scores, 3);
+    expect(dist.birdies).toBe(2);
+    expect(dist.eaglesOrBetter).toBe(0);
   });
 });

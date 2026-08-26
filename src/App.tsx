@@ -662,7 +662,11 @@ function App() {
           isFirst={isFirst}
           isLast={isLast}
           isReadOnly={isCurrentRoundComplete && !isEditingRound}
-          relativeScore={calculateRelativeScore(currentCourse.holes, currentRound?.scores || {})}
+          relativeScore={calculateRelativeScore(
+            currentCourse.holes,
+            currentRound?.scores || {},
+            currentHole.number
+          )}
           guests={currentRound?.guests}
           onUpdateGuestScore={handleUpdateGuestScore}
           onOpenScorecard={() => setView('scorecard')}
@@ -679,6 +683,7 @@ function App() {
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
           onEditHole={handleEditHole}
           courseName={currentCourse.course_name}
+          activeHoleNumber={!isCurrentRoundComplete ? currentHole.number : undefined}
         />
       ) : view === 'profile' ? (
         <Profile

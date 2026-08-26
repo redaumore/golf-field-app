@@ -14,9 +14,19 @@ interface ScorecardProps {
     guests?: GuestPlayer[];
     onEditHole?: (holeNumber: number) => void;
     courseName?: string;
+    activeHoleNumber?: number;
 }
 
-export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, onMenuClick, guests, onEditHole, courseName }) => {
+export const Scorecard: React.FC<ScorecardProps> = ({
+    course,
+    scores,
+    onBack,
+    onMenuClick,
+    guests,
+    onEditHole,
+    courseName,
+    activeHoleNumber,
+}) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>('main');
 
@@ -26,11 +36,18 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
         ? scores 
         : (selectedGuest?.scores || {});
 
-    const totalShots = Object.values(activeScores).reduce((acc, score) => acc + (score?.approachShots || 0) + (score?.putts || 0), 0);
-    const playedHoles = course.filter(hole => activeScores[hole.number] && ((activeScores[hole.number].approachShots || 0) + (activeScores[hole.number].putts || 0) > 0));
+    const playedHoles = course.filter(hole =>
+        (activeHoleNumber === undefined || hole.number !== activeHoleNumber) &&
+        activeScores[hole.number] &&
+        ((activeScores[hole.number].approachShots || 0) + (activeScores[hole.number].putts || 0) > 0)
+    );
+    const totalShots = playedHoles.reduce((acc, hole) => {
+        const s = activeScores[hole.number];
+        return acc + (s?.approachShots || 0) + (s?.putts || 0);
+    }, 0);
     const totalPar = playedHoles.reduce((acc, hole) => acc + hole.par, 0);
-    const relativeScore = calculateRelativeScore(course, activeScores);
-    const scoreDistribution = calculateScoreDistribution(course, activeScores);
+    const relativeScore = calculateRelativeScore(course, activeScores, activeHoleNumber);
+    const scoreDistribution = calculateScoreDistribution(course, activeScores, activeHoleNumber);
 
     const lostBalls = countLostBalls(scores);
     const clubDistances = maxDistanceByClub(scores);
@@ -54,8 +71,8 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
         return { total: holeTotal, display: holeTotal.toString() };
     };
 
-    const getScoreColor = (par: number, score: number) => {
-        if (score === 0) return 'theme-text-tertiary';
+    const getScoreColor = (par: number, score: number, isInProgress?: boolean) => {
+        if (score === 0 || isInProgress) return 'theme-text-tertiary';
         const diff = score - par;
         if (diff <= -2) return 'theme-text-accent-yellow font-bold'; // Eagle or better
         if (diff === -1) return 'theme-text-accent-red font-bold'; // Birdie
@@ -170,8 +187,11 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                                 </div>
                             )}
                             {guests.filter(g => g.id !== selectedPlayerId).map((g) => {
-                                const gShots = Object.values(g.scores).reduce((acc, s) => acc + s.approachShots + s.putts, 0);
-                                const gPlayed = course.filter(h => g.scores[h.number] && (g.scores[h.number].approachShots + g.scores[h.number].putts > 0));
+                                const gPlayed = course.filter(h => (activeHoleNumber === undefined || h.number !== activeHoleNumber) && g.scores[h.number] && (g.scores[h.number].approachShots + g.scores[h.number].putts > 0));
+                                const gShots = gPlayed.reduce((acc, h) => {
+                                    const s = g.scores[h.number];
+                                    return acc + (s?.approachShots || 0) + (s?.putts || 0);
+                                }, 0);
                                 const gPar = gPlayed.reduce((acc, h) => acc + h.par, 0);
                                 const gRel = gShots - gPar;
                                 return (
@@ -284,6 +304,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
                         const { total, display } = getScoreForHole(hole.number, activeScores);
                         const isExpanded = expandedHole === hole.number;
                         const mainPlayerScore = scores[hole.number];
+                        const isHoleInProgress = activeHoleNumber === hole.number;
 
                         return (
                             <div key={hole.number} className="theme-card rounded-lg shadow-sm border theme-border overflow-hidden">
@@ -323,7 +344,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({ course, scores, onBack, on
 
                                     {/* Right: Total Score Active Player */}
                                     <div className="flex items-center gap-2">
-                                        <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total)}`}>
+                                        <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total, isHoleInProgress)}`}>
                                             {display}
                                         </div>
                                     </div>

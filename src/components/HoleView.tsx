@@ -63,6 +63,18 @@ export const HoleView: React.FC<HoleViewProps> = ({
     const isTeeLocationZero = !isValidCoord(score.teeLocation);
     const isCourseTeePredefined = isValidCoord(hole.teeLocation);
 
+    const lastLocation = (() => {
+        const shotsWithLoc = score.approachShotsDetails?.filter(s => isValidCoord(s.location));
+        if (shotsWithLoc && shotsWithLoc.length > 0) {
+            return shotsWithLoc[shotsWithLoc.length - 1].location;
+        }
+        return isValidCoord(score.teeLocation) ? score.teeLocation : undefined;
+    })();
+
+    const dist = (isValidCoord(hole.greenCenter) && isValidCoord(lastLocation))
+        ? calculateDistance(lastLocation!, hole.greenCenter!)
+        : null;
+
     const handleMarkTee = () => {
         if (!navigator.geolocation) {
             alert('La geolocalización no está disponible en este dispositivo.');
@@ -159,28 +171,13 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         <div className="flex items-center space-x-3 text-sm font-bold theme-text-secondary mt-1">
                             <span className="flex items-center"><Flag size={14} className="mr-1" /> Par {hole.par}</span>
                             <span className="flex items-center"><MapPin size={14} className="mr-1" /> {hole.distance}y</span>
+                            <span className="flex items-center text-green-600 dark:text-green-400">
+                                <Target size={14} className="mr-1" /> {dist !== null ? `${dist}y` : '-'}
+                            </span>
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    {onOpenScorecard && (
-                        <button
-                            onClick={onOpenScorecard}
-                            className="p-2 theme-btn-primary rounded-lg shadow-sm active:scale-95 transition-transform"
-                            title="Scorecard"
-                        >
-                            <FileText size={20} />
-                        </button>
-                    )}
-                    {!isReadOnly && (
-                        <button
-                            onClick={() => setShowFinishModal(true)}
-                            className="p-2 theme-accent-green rounded-lg shadow-sm border-2 active:scale-95 transition-transform"
-                            title="Finish Round"
-                        >
-                            <CheckCircle size={20} />
-                        </button>
-                    )}
+                <div className="flex items-center">
                     <button
                         onClick={onMenuClick}
                         className="p-3 theme-btn-primary rounded-lg shadow-sm"
@@ -243,43 +240,6 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         </button>
                     </div>
                 )}
-
-                {/* Distance & Map Bar */}
-                <div className="flex items-center justify-between px-2">
-                    {(() => {
-                        const lastLocation = (() => {
-                            const shotsWithLoc = score.approachShotsDetails?.filter(s => isValidCoord(s.location));
-                            if (shotsWithLoc && shotsWithLoc.length > 0) {
-                                return shotsWithLoc[shotsWithLoc.length - 1].location;
-                            }
-                            return isValidCoord(score.teeLocation) ? score.teeLocation : undefined;
-                        })();
-
-                        const dist = (isValidCoord(hole.greenCenter) && isValidCoord(lastLocation))
-                            ? calculateDistance(lastLocation!, hole.greenCenter!)
-                            : null;
-
-                        return (
-                            <div className="flex items-center">
-                                <span className="text-xs font-bold theme-text-secondary uppercase tracking-wider">To Green:</span>
-                                {dist !== null ? (
-                                    <span className="ml-2 text-lg font-black text-green-600 dark:text-green-400">{dist}y</span>
-                                ) : (
-                                    <span className="ml-2 text-xs font-bold text-gray-400">-</span>
-                                )}
-                            </div>
-                        );
-                    })()}
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowHoleImage(true)}
-                            className="p-2 theme-btn-primary rounded-lg shadow-sm active:scale-95 transition-transform"
-                            title="View Hole Map"
-                        >
-                            <ImageIcon size={20} />
-                        </button>
-                    </div>
-                </div>
 
                 {/* Total Score Display */}
                 <div className="flex flex-col items-center justify-center pt-2 pb-2">
@@ -409,6 +369,38 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 +
                             </button>
                         </div>
+                    </div>
+
+                    {/* Action Buttons: Scorecard, Map, Finish Round */}
+                    <div className="flex items-center gap-2">
+                        {onOpenScorecard && (
+                            <button
+                                onClick={onOpenScorecard}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
+                                title="Scorecard"
+                            >
+                                <FileText size={16} />
+                                <span>Scorecard</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowHoleImage(true)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
+                            title="View Hole Map"
+                        >
+                            <ImageIcon size={16} />
+                            <span>Mapa</span>
+                        </button>
+                        {!isReadOnly && (
+                            <button
+                                onClick={() => setShowFinishModal(true)}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-accent-green rounded-xl border-2 font-bold text-xs shadow-sm active:scale-95 transition-transform"
+                                title="Finish Round"
+                            >
+                                <CheckCircle size={16} />
+                                <span>Finalizar</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Guests Section */}

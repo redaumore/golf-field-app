@@ -2,15 +2,23 @@ import type { Hole, HoleScore, GuestScore, ScoreDistribution } from '../types';
 
 type ScoreRecord = Record<number, HoleScore | GuestScore | { approachShots: number; putts: number }>;
 
-export const calculateRelativeScore = (course: Hole[], scores: ScoreRecord): number => {
+export const calculateRelativeScore = (
+    course: Hole[],
+    scores: ScoreRecord,
+    excludeHoleNumber?: number
+): number => {
     let totalShots = 0;
     let totalPar = 0;
 
     Object.entries(scores).forEach(([holeNumberStr, score]) => {
-        const holeNumber = parseInt(holeNumberStr);
+        const holeNumber = parseInt(holeNumberStr, 10);
+        if (excludeHoleNumber !== undefined && holeNumber === excludeHoleNumber) {
+            return;
+        }
+
         const hole = course.find(h => h.number === holeNumber);
 
-        // Only count holes that have at least one shot OR are the current hole with shots
+        // Only count holes that have at least one shot
         const holeTotal = score.approachShots + score.putts;
         if (holeTotal > 0 && hole) {
             totalShots += holeTotal;
@@ -23,7 +31,8 @@ export const calculateRelativeScore = (course: Hole[], scores: ScoreRecord): num
 
 export const calculateScoreDistribution = (
     course: Hole[],
-    scores: ScoreRecord
+    scores: ScoreRecord,
+    excludeHoleNumber?: number
 ): ScoreDistribution => {
     const dist: ScoreDistribution = {
         eaglesOrBetter: 0,
@@ -36,7 +45,11 @@ export const calculateScoreDistribution = (
     };
 
     Object.entries(scores).forEach(([holeNumberStr, score]) => {
-        const holeNumber = parseInt(holeNumberStr);
+        const holeNumber = parseInt(holeNumberStr, 10);
+        if (excludeHoleNumber !== undefined && holeNumber === excludeHoleNumber) {
+            return;
+        }
+
         const hole = course.find(h => h.number === holeNumber);
         const holeTotal = score.approachShots + score.putts;
 
