@@ -370,38 +370,6 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         </div>
                     </div>
 
-                    {/* Action Buttons: Scorecard, Map, Finish Round */}
-                    <div className="flex items-center gap-2">
-                        {onOpenScorecard && (
-                            <button
-                                onClick={onOpenScorecard}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
-                                title="Scorecard"
-                            >
-                                <FileText size={16} />
-                                <span>Scorecard</span>
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setShowHoleImage(true)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
-                            title="View Hole Map"
-                        >
-                            <ImageIcon size={16} />
-                            <span>Mapa</span>
-                        </button>
-                        {!isReadOnly && (
-                            <button
-                                onClick={() => setShowFinishModal(true)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-accent-green rounded-xl border-2 font-bold text-xs shadow-sm active:scale-95 transition-transform"
-                                title="Finish Round"
-                            >
-                                <CheckCircle size={16} />
-                                <span>Finalizar</span>
-                            </button>
-                        )}
-                    </div>
-
                     {/* Guests Section */}
                     {guests && guests.length > 0 && (
                         <div className="space-y-4 pt-4 border-t theme-border">
@@ -474,6 +442,38 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             })}
                         </div>
                     )}
+
+                    {/* Action Buttons: Finish Round, Scorecard, Map */}
+                    <div className="flex items-center gap-2">
+                        {!isReadOnly && (
+                            <button
+                                onClick={() => setShowFinishModal(true)}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-accent-green rounded-xl border-2 font-bold text-xs shadow-sm active:scale-95 transition-transform"
+                                title="Finish Round"
+                            >
+                                <CheckCircle size={16} />
+                                <span>Finalizar</span>
+                            </button>
+                        )}
+                        {onOpenScorecard && (
+                            <button
+                                onClick={onOpenScorecard}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
+                                title="Scorecard"
+                            >
+                                <FileText size={16} />
+                                <span>Scorecard</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowHoleImage(true)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 theme-card rounded-xl border theme-border font-bold text-xs shadow-sm active:scale-95 transition-transform theme-text-primary hover:border-blue-400"
+                            title="View Hole Map"
+                        >
+                            <ImageIcon size={16} />
+                            <span>Mapa</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
