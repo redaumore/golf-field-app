@@ -24,6 +24,8 @@ interface HoleViewProps {
     bagClubs: GolfClub[];
     courseName?: string;
     courseId?: string;
+    courseHoles?: Hole[];
+    allScores?: Record<number, HoleScore>;
 }
 
 const isValidCoord = (loc?: { latitude: number; longitude: number } | null): boolean => {
@@ -49,6 +51,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
     bagClubs,
     courseName,
     courseId = '1',
+    courseHoles = [],
+    allScores = {},
 }) => {
     const [showFinishModal, setShowFinishModal] = useState(false);
     const [selectedClub, setSelectedClub] = useState<GolfClub | null>(null);
@@ -442,6 +446,182 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             })}
                         </div>
                     )}
+
+                    {/* Compact Out / In Scorecard Table */}
+                    {courseHoles.length > 0 && (() => {
+                        const outHoles = courseHoles.filter(h => h.number <= 9);
+                        const inHoles = courseHoles.filter(h => h.number > 9);
+
+                        // Helper to format player initials / short name
+                        const getShortName = (fullName: string, isMain?: boolean) => {
+                            if (isMain) return 'Tú';
+                            const parts = fullName.trim().split(/\s+/);
+                            if (parts.length === 1) return parts[0].slice(0, 4);
+                            return `${parts[0].slice(0, 1)}${parts[1].slice(0, 1)}`.toUpperCase();
+                        };
+
+                        interface PlayerRowData {
+                            id: string;
+                            name: string;
+                            shortName: string;
+                            isMain?: boolean;
+                            scores: Record<number, { approachShots: number; putts: number }>;
+                        }
+
+                        const players: PlayerRowData[] = [
+                            {
+                                id: 'main',
+                                name: 'Jugador Principal',
+                                shortName: getShortName('Tú', true),
+                                isMain: true,
+                                scores: allScores,
+                            },
+                            ...(guests || []).map(g => ({
+                                id: g.id,
+                                name: g.name,
+                                shortName: getShortName(g.name),
+                                isMain: false,
+                                scores: g.scores,
+                            }))
+                        ];
+
+                        const getPlayerScore = (playerScores: Record<number, { approachShots: number; putts: number }>, hNum: number) => {
+                            const sc = playerScores[hNum];
+                            if (!sc) return null;
+                            const total = sc.approachShots + sc.putts;
+                            return total > 0 ? total : null;
+                        };
+
+                        const getScoreStyle = (playerScores: Record<number, { approachShots: number; putts: number }>, hNum: number, par: number) => {
+                            const isCurrent = hNum === hole.number;
+                            const sc = getPlayerScore(playerScores, hNum);
+                            if (sc === null) {
+                                return isCurrent
+                                    ? 'border-2 border-blue-500 bg-blue-500/15 font-bold text-blue-600 dark:text-blue-400'
+                                    : 'theme-text-tertiary';
+                            }
+                            const diff = sc - par;
+                            let style = 'font-bold ';
+                            if (diff <= -2) style += 'bg-amber-400/20 text-amber-600 dark:text-amber-400';
+                            else if (diff === -1) style += 'bg-rose-500/20 text-rose-600 dark:text-rose-400';
+                            else if (diff === 0) style += 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
+                            else if (diff === 1) style += 'bg-slate-400/20 text-slate-700 dark:text-slate-300';
+                            else style += 'bg-zinc-600/20 text-zinc-800 dark:text-zinc-200';
+
+                            if (isCurrent) {
+                                style += ' ring-1.5 ring-blue-500';
+                            }
+                            return style;
+                        };
+
+                        // Par totals
+                        const outPar = outHoles.reduce((acc, h) => acc + h.par, 0);
+                        const inPar = inHoles.reduce((acc, h) => acc + h.par, 0);
+                        const totalPar = outPar + inPar;
+
+                        // Main player summary for card header
+                        const mainOutTotal = outHoles.reduce((acc, h) => {
+                            const sc = getPlayerScore(allScores, h.number);
+                            return acc + (sc !== null ? sc : 0);
+                        }, 0);
+                        const mainInTotal = inHoles.reduce((acc, h) => {
+                            const sc = getPlayerScore(allScores, h.number);
+                            return acc + (sc !== null ? sc : 0);
+                        }, 0);
+                        const mainTotalScore = mainOutTotal + mainInTotal;
+                        const mainPlayedCount = courseHoles.filter(h => getPlayerScore(allScores, h.number) !== null).length;
+
+                        const renderSection = (title: string, holes: typeof courseHoles, subtotalLabel: string, subtotalPar: number) => (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-center border-collapse text-[11px]">
+                                    <thead>
+                                        <tr className="border-b theme-border font-bold theme-text-tertiary">
+                                            <th className="py-1 px-1 text-left w-14 uppercase text-[10px]">{title}</th>
+                                            {holes.map(h => (
+                                                <th
+                                                    key={h.number}
+                                                    className={`py-1 px-0.5 min-w-[22px] ${h.number === hole.number ? 'text-blue-600 dark:text-blue-400 font-black' : ''}`}
+                                                >
+                                                    {h.number}
+                                                </th>
+                                            ))}
+                                            <th className="py-1 px-1 font-black theme-text-primary min-w-[28px]">{subtotalLabel}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {/* Par row */}
+                                        <tr className="border-b theme-border opacity-70 text-[10px]">
+                                            <td className="py-1 px-1 text-left font-semibold theme-text-secondary">Par</td>
+                                            {holes.map(h => (
+                                                <td key={h.number} className="py-1 px-0.5">
+                                                    {h.par}
+                                                </td>
+                                            ))}
+                                            <td className="py-1 px-1 font-bold">{subtotalPar}</td>
+                                        </tr>
+                                        {/* Player Score rows */}
+                                        {players.map((p, pIdx) => {
+                                            const subtotal = holes.reduce((acc, h) => {
+                                                const sc = getPlayerScore(p.scores, h.number);
+                                                return acc + (sc !== null ? sc : 0);
+                                            }, 0);
+                                            const playedCount = holes.filter(h => getPlayerScore(p.scores, h.number) !== null).length;
+
+                                            return (
+                                                <tr key={p.id} className={pIdx > 0 ? 'border-t theme-border/60' : ''}>
+                                                    <td className="py-1 px-1 text-left font-bold theme-text-primary truncate max-w-[56px]" title={p.name}>
+                                                        <span className="flex items-center gap-1">
+                                                            <span className="truncate">{p.shortName}</span>
+                                                        </span>
+                                                    </td>
+                                                    {holes.map(h => {
+                                                        const sc = getPlayerScore(p.scores, h.number);
+                                                        return (
+                                                            <td key={h.number} className="py-1 px-0.5">
+                                                                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md ${getScoreStyle(p.scores, h.number, h.par)}`}>
+                                                                    {sc !== null ? sc : '-'}
+                                                                </span>
+                                                            </td>
+                                                        );
+                                                    })}
+                                                    <td className="py-1 px-1 font-black text-xs theme-text-primary">
+                                                        {playedCount > 0 ? subtotal : '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        );
+
+                        return (
+                            <div className="theme-card rounded-2xl p-3 border theme-border space-y-3 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider theme-text-secondary">
+                                        <BarChart2 size={14} />
+                                        <span>Resumen de Ronda</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs font-bold">
+                                        <span className="theme-text-tertiary">Total:</span>
+                                        <span className="font-black px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                                            {mainPlayedCount > 0 ? `${mainTotalScore} (${mainTotalScore - totalPar >= 0 ? `+${mainTotalScore - totalPar}` : mainTotalScore - totalPar})` : `Par ${totalPar}`}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Ida (1-9) */}
+                                {outHoles.length > 0 && renderSection('Ida', outHoles, 'OUT', outPar)}
+
+                                {/* Vuelta (10-18) */}
+                                {inHoles.length > 0 && (
+                                    <div className="pt-2 border-t theme-border">
+                                        {renderSection('Vuelta', inHoles, 'IN', inPar)}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* Action Buttons: Finish Round, Scorecard, Map */}
                     <div className="flex items-center gap-2">

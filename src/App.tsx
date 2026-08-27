@@ -673,6 +673,8 @@ function App() {
           bagClubs={bag}
           courseName={currentCourse.course_name}
           courseId={currentCourse.id}
+          courseHoles={currentCourse.holes}
+          allScores={currentRound?.scores || {}}
         />
       ) : view === 'scorecard' ? (
         <Scorecard
