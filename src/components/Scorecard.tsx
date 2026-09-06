@@ -238,27 +238,22 @@ export const Scorecard: React.FC<ScorecardProps> = ({
 
                         {/* Detalle en Cuadrícula (Grid) */}
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            {statItems.map((item, idx) => {
-                                const isZero = item.count === 0;
-                                return (
+                            {statItems
+                                .filter((item) => item.count > 0)
+                                .map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className={`flex items-center justify-between p-2 rounded-xl border theme-border transition-all duration-200 ${
-                                            isZero
-                                                ? 'opacity-40 theme-bg-secondary'
-                                                : 'theme-bg-primary hover:scale-[1.02] shadow-sm hover:shadow-md'
-                                        }`}
+                                        className="flex items-center justify-between p-2 rounded-xl border theme-border transition-all duration-200 theme-bg-primary hover:scale-[1.02] shadow-sm hover:shadow-md"
                                     >
                                         <div className="flex items-center gap-1.5 min-w-0">
                                             <span className={`w-2 h-2 rounded-full shrink-0 ${item.colorClass}`} />
                                             <span className="text-xs font-semibold theme-text-secondary truncate">{item.label}</span>
                                         </div>
-                                        <span className={`text-xs font-black shrink-0 ${isZero ? 'theme-text-tertiary' : item.textClass}`}>
+                                        <span className={`text-xs font-black shrink-0 ${item.textClass}`}>
                                             {item.count}
                                         </span>
                                     </div>
-                                );
-                            })}
+                                ))}
                         </div>
                     </div>
                 )}

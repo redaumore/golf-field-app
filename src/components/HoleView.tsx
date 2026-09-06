@@ -334,7 +334,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                         <button
                                             key={club}
                                             onClick={() => setSelectedClub(club)}
-                                            className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all border-2 flex items-center justify-center ${selectedClub === club
+                                            className={`py-2.5 px-1 rounded-xl text-base sm:text-lg font-black transition-all border-2 flex items-center justify-center leading-none ${selectedClub === club
                                                 ? club === 'LostBall'
                                                     ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-1 ring-red-200 scale-105'
                                                     : 'theme-btn-approach ring-2 ring-offset-1 ring-blue-400 scale-105'
@@ -344,7 +344,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                                 }`}
                                             title={club === 'LostBall' ? "Lost Ball (Penalty)" : club}
                                         >
-                                            {club === 'LostBall' ? <XCircle size={14} /> : club}
+                                            {club === 'LostBall' ? <XCircle size={20} /> : club}
                                         </button>
                                     ))}
                                 </div>
@@ -533,31 +533,31 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
                         const renderSection = (title: string, holes: typeof courseHoles, subtotalLabel: string, subtotalPar: number) => (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-center border-collapse text-[11px]">
+                                <table className="w-full text-center border-collapse">
                                     <thead>
                                         <tr className="border-b theme-border font-bold theme-text-tertiary">
-                                            <th className="py-1 px-1 text-left w-14 uppercase text-[10px]">{title}</th>
+                                            <th className="py-1 px-0.5 text-left w-9 uppercase text-[11px]">{title}</th>
                                             {holes.map(h => (
                                                 <th
                                                     key={h.number}
-                                                    className={`py-1 px-0.5 min-w-[22px] ${h.number === hole.number ? 'text-blue-600 dark:text-blue-400 font-black' : ''}`}
+                                                    className={`py-1 px-0 text-[13px] font-semibold ${h.number === hole.number ? 'text-blue-600 dark:text-blue-400 font-black' : ''}`}
                                                 >
                                                     {h.number}
                                                 </th>
                                             ))}
-                                            <th className="py-1 px-1 font-black theme-text-primary min-w-[28px]">{subtotalLabel}</th>
+                                            <th className="py-1 px-0.5 font-black theme-text-primary text-[13px] w-8">{subtotalLabel}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {/* Par row */}
-                                        <tr className="border-b theme-border opacity-70 text-[10px]">
-                                            <td className="py-1 px-1 text-left font-semibold theme-text-secondary">Par</td>
+                                        <tr className="border-b theme-border opacity-70">
+                                            <td className="py-1 px-0.5 text-left font-semibold theme-text-secondary text-[11px]">Par</td>
                                             {holes.map(h => (
-                                                <td key={h.number} className="py-1 px-0.5">
+                                                <td key={h.number} className="py-1 px-0 text-xs font-semibold">
                                                     {h.par}
                                                 </td>
                                             ))}
-                                            <td className="py-1 px-1 font-bold">{subtotalPar}</td>
+                                            <td className="py-1 px-0.5 font-bold text-xs">{subtotalPar}</td>
                                         </tr>
                                         {/* Player Score rows */}
                                         {players.map((p, pIdx) => {
@@ -569,7 +569,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
                                             return (
                                                 <tr key={p.id} className={pIdx > 0 ? 'border-t theme-border/60' : ''}>
-                                                    <td className="py-1 px-1 text-left font-bold theme-text-primary truncate max-w-[56px]" title={p.name}>
+                                                    <td className="py-1 px-0.5 text-left font-bold theme-text-primary truncate max-w-[40px] text-xs" title={p.name}>
                                                         <span className="flex items-center gap-1">
                                                             <span className="truncate">{p.shortName}</span>
                                                         </span>
@@ -577,14 +577,14 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                                     {holes.map(h => {
                                                         const sc = getPlayerScore(p.scores, h.number);
                                                         return (
-                                                            <td key={h.number} className="py-1 px-0.5">
-                                                                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-md ${getScoreStyle(p.scores, h.number, h.par)}`}>
+                                                            <td key={h.number} className="py-1 px-0">
+                                                                <span className={`inline-flex items-center justify-center w-[26px] h-[26px] rounded-md text-base font-bold leading-none ${getScoreStyle(p.scores, h.number, h.par)}`}>
                                                                     {sc !== null ? sc : '-'}
                                                                 </span>
                                                             </td>
                                                         );
                                                     })}
-                                                    <td className="py-1 px-1 font-black text-xs theme-text-primary">
+                                                    <td className="py-1 px-0.5 font-black text-base theme-text-primary">
                                                         {playedCount > 0 ? subtotal : '-'}
                                                     </td>
                                                 </tr>
@@ -596,7 +596,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         );
 
                         return (
-                            <div className="theme-card rounded-2xl p-3 border theme-border space-y-3 shadow-sm">
+                            <div className="theme-card rounded-2xl p-2.5 sm:p-3 border theme-border space-y-3 shadow-sm">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider theme-text-secondary">
                                         <BarChart2 size={14} />
