@@ -326,6 +326,40 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             </div>
                         </div>
 
+                        {/* Sequential Shots Trail */}
+                        {score.approachShotsDetails && score.approachShotsDetails.length > 0 ? (
+                            <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 no-scrollbar">
+                                {score.approachShotsDetails.map((detail, index) => {
+                                    const isLastShot = index === score.approachShotsDetails!.length - 1;
+                                    const isLostBall = detail.club === 'LostBall';
+                                    const isFirstShotFairway = index === 0 && detail.fairwayHit === true;
+
+                                    let badgeStyle = 'theme-btn-approach shadow-sm';
+                                    if (isLostBall) {
+                                        badgeStyle = 'bg-red-500 text-white border-red-600 shadow-sm';
+                                    } else if (isFirstShotFairway) {
+                                        badgeStyle = 'bg-emerald-600 text-white border-emerald-700 shadow-sm';
+                                    }
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 border-2 transition-transform leading-none ${badgeStyle} ${
+                                                isLastShot ? 'ring-2 ring-offset-1 ring-blue-500 scale-105' : ''
+                                            }`}
+                                            title={isLostBall ? 'Lost Ball' : isFirstShotFairway ? `${detail.club} (Fairway)` : detail.club}
+                                        >
+                                            {isLostBall ? <XCircle size={16} /> : detail.club}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : score.approachShots > 0 ? (
+                            <div className="text-center text-[11px] theme-text-approach opacity-60 py-0.5">
+                                {score.approachShots} {score.approachShots === 1 ? 'shot' : 'shots'} recorded
+                            </div>
+                        ) : null}
+
                         {/* Club Selection Grid */}
                         {!isReadOnly && (
                             <div className="pt-2 border-t theme-border-approach opacity-90">
@@ -501,15 +535,26 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                     : 'theme-text-tertiary';
                             }
                             const diff = sc - par;
-                            let style = 'font-bold ';
-                            if (diff <= -2) style += 'bg-amber-400/20 text-amber-600 dark:text-amber-400';
-                            else if (diff === -1) style += 'bg-rose-500/20 text-rose-600 dark:text-rose-400';
-                            else if (diff === 0) style += 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
-                            else if (diff === 1) style += 'bg-slate-400/20 text-slate-700 dark:text-slate-300';
-                            else style += 'bg-zinc-600/20 text-zinc-800 dark:text-zinc-200';
+                            let style = 'font-black text-white shadow-xs ';
+                            if (diff <= -2) {
+                                // Eagle or better: Gold / Amber
+                                style += 'bg-amber-500 border border-amber-600';
+                            } else if (diff === -1) {
+                                // Birdie: Red / Crimson
+                                style += 'bg-rose-500 border border-rose-600';
+                            } else if (diff === 0) {
+                                // Par: Emerald Green
+                                style += 'bg-emerald-600 border border-emerald-700';
+                            } else if (diff === 1) {
+                                // Bogey: Cool Slate
+                                style += 'bg-slate-500 border border-slate-600';
+                            } else {
+                                // Double bogey or worse: Dark Charcoal
+                                style += 'bg-zinc-700 border border-zinc-800';
+                            }
 
                             if (isCurrent) {
-                                style += ' ring-1.5 ring-blue-500';
+                                style += ' ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900';
                             }
                             return style;
                         };
