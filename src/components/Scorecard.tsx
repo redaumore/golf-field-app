@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Hole, HoleScore, GuestPlayer } from '../types';
-import { ArrowLeft, ChevronDown, ChevronUp, Menu, Users, User, Edit2 } from 'lucide-react';
+import { ArrowLeft, Menu, Users, User, Edit2 } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
 import { countLostBalls, maxDistanceByClub } from '../utils/stats';
@@ -293,176 +293,358 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     </div>
                 )}
 
-                <div className="space-y-3">
-                    {course.map((hole) => {
-                        const holeScore = activeScores[hole.number];
-                        const { total, display } = getScoreForHole(hole.number, activeScores);
-                        const isExpanded = expandedHole === hole.number;
-                        const mainPlayerScore = scores[hole.number];
-                        const isHoleInProgress = activeHoleNumber === hole.number;
+                {/* Scorecard Grid Section (Out / In) */}
+                <div className="mb-6 theme-card rounded-2xl p-3 border theme-border space-y-4 shadow-sm">
+                    {course.length > 0 && (() => {
+                        const outHoles = course.filter(h => h.number <= 9);
+                        const inHoles = course.filter(h => h.number > 9);
+
+                        const getScoreStyle = (total: number | null, par: number, isSelected: boolean) => {
+                            if (total === null) {
+                                return isSelected
+                                    ? 'border-2 border-blue-500 bg-blue-500/15 font-bold text-blue-600 dark:text-blue-400'
+                                    : 'theme-text-tertiary';
+                            }
+                            const diff = total - par;
+                            let style = 'font-black text-white shadow-xs ';
+                            if (diff <= -2) {
+                                style += 'bg-amber-500 border border-amber-600';
+                            } else if (diff === -1) {
+                                style += 'bg-rose-500 border border-rose-600';
+                            } else if (diff === 0) {
+                                style += 'bg-emerald-600 border border-emerald-700';
+                            } else if (diff === 1) {
+                                style += 'bg-slate-500 border border-slate-600';
+                            } else {
+                                style += 'bg-zinc-700 border border-zinc-800';
+                            }
+
+                            if (isSelected) {
+                                style += ' ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900';
+                            }
+                            return style;
+                        };
+
+                        const renderSection = (title: string, holes: Hole[], subtotalLabel: string, subtotalPar: number) => {
+                            const subtotalApp = holes.reduce((acc, h) => {
+                                const sc = activeScores[h.number];
+                                return acc + (sc ? sc.approachShots : 0);
+                            }, 0);
+                            const subtotalPutts = holes.reduce((acc, h) => {
+                                const sc = activeScores[h.number];
+                                return acc + (sc ? sc.putts : 0);
+                            }, 0);
+                            const playedCount = holes.filter(h => {
+                                const sc = activeScores[h.number];
+                                return sc && (sc.approachShots + sc.putts > 0);
+                            }).length;
+                            const subtotalTotal = subtotalApp + subtotalPutts;
+
+                            return (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-center border-collapse">
+                                        <thead>
+                                            <tr className="border-b theme-border font-bold theme-text-tertiary">
+                                                <th className="py-1 px-0.5 text-left w-10 uppercase text-[11px]">{title}</th>
+                                                {holes.map(h => {
+                                                    const isSelected = expandedHole === h.number;
+                                                    return (
+                                                        <th
+                                                            key={h.number}
+                                                            onClick={() => toggleHole(h.number)}
+                                                            className={`py-1 px-0 text-[13px] font-semibold cursor-pointer transition-colors hover:text-blue-500 ${
+                                                                isSelected ? 'text-blue-600 dark:text-blue-400 font-black' : ''
+                                                            }`}
+                                                        >
+                                                            {h.number}
+                                                        </th>
+                                                    );
+                                                })}
+                                                <th className="py-1 px-0.5 font-black theme-text-primary text-[13px] w-9">{subtotalLabel}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* Par row */}
+                                            <tr className="border-b theme-border opacity-70">
+                                                <td className="py-1 px-0.5 text-left font-semibold theme-text-secondary text-[11px]">Par</td>
+                                                {holes.map(h => (
+                                                    <td
+                                                        key={h.number}
+                                                        onClick={() => toggleHole(h.number)}
+                                                        className="py-1 px-0 text-xs font-semibold cursor-pointer"
+                                                    >
+                                                        {h.par}
+                                                    </td>
+                                                ))}
+                                                <td className="py-1 px-0.5 font-bold text-xs">{subtotalPar}</td>
+                                            </tr>
+
+                                            {/* Approach row */}
+                                            <tr className="border-b theme-border/50 text-xs text-blue-600 dark:text-blue-400">
+                                                <td className="py-1 px-0.5 text-left font-bold truncate text-[11px]">
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                        App
+                                                    </span>
+                                                </td>
+                                                {holes.map(h => {
+                                                    const sc = activeScores[h.number];
+                                                    const hasShots = sc && (sc.approachShots + sc.putts > 0);
+                                                    return (
+                                                        <td
+                                                            key={h.number}
+                                                            onClick={() => toggleHole(h.number)}
+                                                            className="py-1 px-0 font-medium cursor-pointer"
+                                                        >
+                                                            {hasShots ? sc.approachShots : '-'}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="py-1 px-0.5 font-bold">
+                                                    {playedCount > 0 ? subtotalApp : '-'}
+                                                </td>
+                                            </tr>
+
+                                            {/* Putts row */}
+                                            <tr className="border-b theme-border/50 text-xs text-emerald-600 dark:text-emerald-400">
+                                                <td className="py-1 px-0.5 text-left font-bold truncate text-[11px]">
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Putt
+                                                    </span>
+                                                </td>
+                                                {holes.map(h => {
+                                                    const sc = activeScores[h.number];
+                                                    const hasShots = sc && (sc.approachShots + sc.putts > 0);
+                                                    return (
+                                                        <td
+                                                            key={h.number}
+                                                            onClick={() => toggleHole(h.number)}
+                                                            className="py-1 px-0 font-medium cursor-pointer"
+                                                        >
+                                                            {hasShots ? sc.putts : '-'}
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="py-1 px-0.5 font-bold">
+                                                    {playedCount > 0 ? subtotalPutts : '-'}
+                                                </td>
+                                            </tr>
+
+                                            {/* Total row with colored pill styles */}
+                                            <tr>
+                                                <td className="py-1 px-0.5 text-left font-bold theme-text-primary truncate text-[11px]">
+                                                    Total
+                                                </td>
+                                                {holes.map(h => {
+                                                    const sc = activeScores[h.number];
+                                                    const total = sc && (sc.approachShots + sc.putts > 0) ? sc.approachShots + sc.putts : null;
+                                                    const isSelected = expandedHole === h.number;
+                                                    return (
+                                                        <td
+                                                            key={h.number}
+                                                            onClick={() => toggleHole(h.number)}
+                                                            className="py-1 px-0 cursor-pointer"
+                                                        >
+                                                            <span className={`inline-flex items-center justify-center w-[26px] h-[26px] rounded-md text-sm font-bold leading-none ${getScoreStyle(total, h.par, isSelected)}`}>
+                                                                {total !== null ? total : '-'}
+                                                            </span>
+                                                        </td>
+                                                    );
+                                                })}
+                                                <td className="py-1 px-0.5 font-black text-sm theme-text-primary">
+                                                    {playedCount > 0 ? subtotalTotal : '-'}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+                        };
+
+                        const outPar = outHoles.reduce((acc, h) => acc + h.par, 0);
+                        const inPar = inHoles.reduce((acc, h) => acc + h.par, 0);
 
                         return (
-                            <div key={hole.number} className="theme-card rounded-lg shadow-sm border theme-border overflow-hidden">
-                                {/* Main Row - Clickable to expand */}
-                                <div
-                                    className="flex items-center justify-between p-3 cursor-pointer active:bg-black/5 dark:active:bg-white/5 transition-colors"
-                                    onClick={() => toggleHole(hole.number)}
-                                >
-                                    {/* Left: Hole Info */}
-                                    <div className="flex flex-col w-20 shrink-0">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm theme-text-primary font-bold uppercase">Hole {hole.number}</span>
-                                            {isExpanded ? <ChevronUp size={14} className="theme-text-tertiary" /> : <ChevronDown size={14} className="theme-text-tertiary" />}
-                                        </div>
-                                        <span className="text-[10px] theme-text-tertiary font-semibold uppercase tracking-wider">
-                                            Par {hole.par} • {hole.distance}y
-                                        </span>
-                                    </div>
-
-                                    {/* Center: Details (Strokes breakdown) */}
-                                    <div className="flex-1 px-3 flex flex-col justify-center border-l theme-border ml-2 pl-3">
-                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
-                                            <div className="flex gap-3 text-xs font-medium theme-text-secondary">
-                                                <span className="flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                                    App: {holeScore.approachShots}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                                                    Putts: {holeScore.putts}
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs theme-text-tertiary italic">-</span>
-                                        )}
-                                    </div>
-
-                                    {/* Right: Total Score Active Player */}
-                                    <div className="flex items-center gap-2">
-                                        <div className={`text-2xl font-mono font-bold w-12 text-center shrink-0 ${getScoreColor(hole.par, total, isHoleInProgress)}`}>
-                                            {display}
-                                        </div>
-                                    </div>
+                            <div className="space-y-4">
+                                <div className="text-xs font-bold uppercase tracking-wider theme-text-tertiary flex items-center justify-between">
+                                    <span>Grilla de Ronda ({activeName})</span>
+                                    <span className="text-[11px] font-normal normal-case opacity-75">Tocá un hoyo para ver o editar detalle</span>
                                 </div>
 
-                                {/* Expanded Details */}
-                                {isExpanded && (
-                                    <div className="theme-bg-secondary border-t theme-border p-3 text-sm animate-in slide-in-from-top-2 duration-200 space-y-3">
-                                        {/* Active Player Details */}
-                                        <div>
-                                            <div className="text-xs font-bold theme-text-primary mb-1 flex items-center gap-1">
-                                                {selectedPlayerId === 'main' ? <User size={13} /> : <Users size={13} />}
-                                                {activeName}
-                                            </div>
-                                            {selectedPlayerId === 'main' && mainPlayerScore ? (
-                                                <>
-                                                    {mainPlayerScore.approachShotsDetails && mainPlayerScore.approachShotsDetails.length > 0 ? (
-                                                        <div>
-                                                            <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary mb-2 px-2">
-                                                                <span>Club</span>
-                                                                <span className="text-center">Distance</span>
-                                                                <span className="text-right">Time</span>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                {mainPlayerScore.approachShotsDetails.map((shot, idx) => (
-                                                                    <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-md theme-bg-primary theme-border border">
-                                                                        <span className="font-bold theme-text-primary">{shot.club}</span>
-                                                                        <span className="text-center theme-text-secondary font-mono">
-                                                                            {shot.distance ? `${shot.distance}y` : '-'}
-                                                                        </span>
-                                                                        <span className="text-right theme-text-tertiary text-[10px]">
-                                                                            {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="text-xs theme-text-tertiary italic">
-                                                            No shot details recorded
-                                                        </div>
-                                                    )}
+                                {/* Ida (1-9) */}
+                                {outHoles.length > 0 && renderSection('Ida', outHoles, 'OUT', outPar)}
 
-                                                    {/* Tee Info */}
-                                                    {mainPlayerScore.teeLocation && (
-                                                        <div className="mt-2 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
-                                                            <span>Tee Location Set</span>
-                                                            <span className="font-mono">
-                                                                {mainPlayerScore.teeLocation.latitude.toFixed(5)}, {mainPlayerScore.teeLocation.longitude.toFixed(5)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <div className="text-xs theme-text-secondary">
-                                                    {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
-                                                        <span>Golpes: {holeScore.approachShots + holeScore.putts} (App: {holeScore.approachShots}, Putts: {holeScore.putts})</span>
-                                                    ) : (
-                                                        <span className="theme-text-tertiary italic">Sin registrar hoyo {hole.number}</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Other Players Comparison Section */}
-                                        {((selectedPlayerId !== 'main') || (guests && guests.length > 0)) && (
-                                            <div className="pt-2 border-t theme-border">
-                                                <div className="text-xs font-bold theme-text-tertiary mb-2 uppercase tracking-wide">
-                                                    Otros Jugadores
-                                                </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                    {selectedPlayerId !== 'main' && (
-                                                        <div className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
-                                                            <span className="font-semibold flex items-center gap-1"><User size={12} /> Jugador Principal</span>
-                                                            {mainPlayerScore && (mainPlayerScore.approachShots + mainPlayerScore.putts > 0) ? (
-                                                                <span className="theme-text-secondary font-mono font-bold">
-                                                                    {mainPlayerScore.approachShots + mainPlayerScore.putts} golpes
-                                                                </span>
-                                                            ) : (
-                                                                <span className="theme-text-tertiary italic">-</span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    {guests?.filter(g => g.id !== selectedPlayerId).map((g) => {
-                                                        const gScore = g.scores[hole.number];
-                                                        const gTotal = gScore ? gScore.approachShots + gScore.putts : 0;
-                                                        return (
-                                                            <div key={g.id} className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
-                                                                <span className="font-semibold flex items-center gap-1"><Users size={12} /> {g.name}</span>
-                                                                {gScore && gTotal > 0 ? (
-                                                                    <span className="theme-text-secondary font-mono font-bold">
-                                                                        {gTotal} golpes
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="theme-text-tertiary italic">-</span>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {onEditHole && (
-                                            <div className="pt-2 border-t theme-border flex justify-end">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onEditHole(hole.number);
-                                                    }}
-                                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl theme-btn-primary text-xs font-bold shadow-sm active:scale-95 transition-transform"
-                                                >
-                                                    <Edit2 size={14} />
-                                                    Editar Hoyo {hole.number}
-                                                </button>
-                                            </div>
-                                        )}
+                                {/* Vuelta (10-18) */}
+                                {inHoles.length > 0 && (
+                                    <div className="pt-3 border-t theme-border">
+                                        {renderSection('Vuelta', inHoles, 'IN', inPar)}
                                     </div>
                                 )}
                             </div>
                         );
-                    })}
+                    })()}
                 </div>
+
+                {/* Selected Hole Execution & Edit Details */}
+                {expandedHole !== null && (() => {
+                    const hole = course.find(h => h.number === expandedHole);
+                    if (!hole) return null;
+
+                    const holeScore = activeScores[hole.number];
+                    const mainPlayerScore = scores[hole.number];
+                    const { display, total } = getScoreForHole(hole.number, activeScores);
+                    const isHoleInProgress = activeHoleNumber === hole.number;
+
+                    return (
+                        <div className="theme-card rounded-2xl shadow-sm border-2 border-blue-500/50 p-4 space-y-4 mb-6 animate-in slide-in-from-top-2 duration-200">
+                            {/* Hole Header Summary */}
+                            <div className="flex items-center justify-between pb-3 border-b theme-border">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-lg font-black theme-text-primary uppercase tracking-wide">
+                                            Hoyo {hole.number}
+                                        </h3>
+                                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+                                            Par {hole.par} • {hole.distance}y
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs font-medium theme-text-secondary mt-1">
+                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
+                                            <>
+                                                <span className="flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                    App: {holeScore.approachShots}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                    Putts: {holeScore.putts}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <span className="theme-text-tertiary italic">Sin golpes registrados</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] uppercase font-bold theme-text-tertiary">Total</div>
+                                    <div className={`text-3xl font-mono font-black ${getScoreColor(hole.par, total, isHoleInProgress)}`}>
+                                        {display}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Active Player Detailed Club Execution (Yards per club) */}
+                            <div>
+                                <div className="text-xs font-bold theme-text-primary mb-2 flex items-center gap-1.5">
+                                    {selectedPlayerId === 'main' ? <User size={14} /> : <Users size={14} />}
+                                    <span>Detalle de Ejecución: {activeName}</span>
+                                </div>
+
+                                {selectedPlayerId === 'main' && mainPlayerScore ? (
+                                    <>
+                                        {mainPlayerScore.approachShotsDetails && mainPlayerScore.approachShotsDetails.length > 0 ? (
+                                            <div className="space-y-1.5">
+                                                <div className="grid grid-cols-3 text-[10px] font-bold uppercase theme-text-tertiary px-2">
+                                                    <span>Palo</span>
+                                                    <span className="text-center">Distancia</span>
+                                                    <span className="text-right">Hora</span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {mainPlayerScore.approachShotsDetails.map((shot, idx) => (
+                                                        <div key={idx} className="grid grid-cols-3 items-center p-2 rounded-xl theme-bg-primary theme-border border text-xs">
+                                                            <span className="font-bold theme-text-primary">{shot.club}</span>
+                                                            <span className="text-center theme-text-secondary font-mono font-semibold">
+                                                                {shot.distance ? `${shot.distance}y` : '-'}
+                                                            </span>
+                                                            <span className="text-right theme-text-tertiary text-[10px]">
+                                                                {new Date(shot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs theme-text-tertiary italic p-2 rounded-lg theme-bg-primary border theme-border">
+                                                No hay detalle de tiros por palo registrado
+                                            </div>
+                                        )}
+
+                                        {/* Tee Location */}
+                                        {mainPlayerScore.teeLocation && (
+                                            <div className="mt-2 pt-2 border-t theme-border flex justify-between text-[10px] theme-text-tertiary">
+                                                <span>Tee Location Set</span>
+                                                <span className="font-mono">
+                                                    {mainPlayerScore.teeLocation.latitude.toFixed(5)}, {mainPlayerScore.teeLocation.longitude.toFixed(5)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-xs theme-text-secondary p-2 rounded-lg theme-bg-primary border theme-border">
+                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
+                                            <span>Golpes registrados: {holeScore.approachShots + holeScore.putts} (App: {holeScore.approachShots}, Putts: {holeScore.putts})</span>
+                                        ) : (
+                                            <span className="theme-text-tertiary italic">Sin registrar hoyo {hole.number}</span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Other Players Comparison Section */}
+                            {((selectedPlayerId !== 'main') || (guests && guests.length > 0)) && (
+                                <div className="pt-2 border-t theme-border">
+                                    <div className="text-xs font-bold theme-text-tertiary mb-2 uppercase tracking-wide">
+                                        Otros Jugadores
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {selectedPlayerId !== 'main' && (
+                                            <div className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
+                                                <span className="font-semibold flex items-center gap-1"><User size={12} /> Jugador Principal</span>
+                                                {mainPlayerScore && (mainPlayerScore.approachShots + mainPlayerScore.putts > 0) ? (
+                                                    <span className="theme-text-secondary font-mono font-bold">
+                                                        {mainPlayerScore.approachShots + mainPlayerScore.putts} golpes (App: {mainPlayerScore.approachShots}, Putts: {mainPlayerScore.putts})
+                                                    </span>
+                                                ) : (
+                                                    <span className="theme-text-tertiary italic">-</span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {guests?.filter(g => g.id !== selectedPlayerId).map((g) => {
+                                            const gScore = g.scores[hole.number];
+                                            const gTotal = gScore ? gScore.approachShots + gScore.putts : 0;
+                                            return (
+                                                <div key={g.id} className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
+                                                    <span className="font-semibold flex items-center gap-1"><Users size={12} /> {g.name}</span>
+                                                    {gScore && gTotal > 0 ? (
+                                                        <span className="theme-text-secondary font-mono font-bold">
+                                                            {gTotal} golpes (App: {gScore.approachShots}, Putts: {gScore.putts})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="theme-text-tertiary italic">-</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Button: Edit Hole */}
+                            {onEditHole && (
+                                <div className="pt-2 border-t theme-border flex justify-end">
+                                    <button
+                                        onClick={() => onEditHole(hole.number)}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl theme-btn-primary text-xs font-bold shadow-sm active:scale-95 transition-transform"
+                                    >
+                                        <Edit2 size={14} />
+                                        Editar Hoyo {hole.number}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
         </div>
     );
