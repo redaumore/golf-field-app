@@ -75,6 +75,31 @@ export const COURSES_DATA: Course[] = [
             { number: 17, par: 3, distance: 150, handicap: 16, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
             { number: 18, par: 4, distance: 318, handicap: 10, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } }
         ]
+    },
+    {
+        id: "4",
+        course_name: "Goodyear Golf Club",
+        par: 60,
+        holes: [
+            { number: 1, par: 4, distance: 0, handicap: 1, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 2, par: 3, distance: 0, handicap: 3, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 3, par: 3, distance: 0, handicap: 5, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 4, par: 3, distance: 0, handicap: 7, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 5, par: 3, distance: 0, handicap: 9, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 6, par: 4, distance: 0, handicap: 11, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 7, par: 3, distance: 0, handicap: 13, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 8, par: 3, distance: 0, handicap: 15, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 9, par: 4, distance: 0, handicap: 17, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 10, par: 4, distance: 0, handicap: 2, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 11, par: 3, distance: 0, handicap: 4, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 12, par: 3, distance: 0, handicap: 6, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 13, par: 3, distance: 0, handicap: 8, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 14, par: 3, distance: 0, handicap: 10, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 15, par: 4, distance: 0, handicap: 12, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 16, par: 3, distance: 0, handicap: 14, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 17, par: 3, distance: 0, handicap: 16, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } },
+            { number: 18, par: 4, distance: 0, handicap: 18, greenCenter: { latitude: 0, longitude: 0 }, teeLocation: { latitude: 0, longitude: 0 } }
+        ]
     }
 ];
 

@@ -92,6 +92,40 @@ describe('COURSES_DATA integrity', () => {
     });
   });
 
+  describe('Goodyear Golf Club (Course 4)', () => {
+    const course = getCourseById("4");
+
+    it('contains exactly 18 holes (9 holes double round)', () => {
+      expect(course.holes).toHaveLength(18);
+    });
+
+    it('has total course par equal to 60', () => {
+      const totalPar = course.holes.reduce((sum, h) => sum + h.par, 0);
+      expect(totalPar).toBe(60);
+      expect(course.par).toBe(60);
+    });
+
+    it('matches requested par sequence for both 9-hole loops', () => {
+      const expectedPars = [4, 3, 3, 3, 3, 4, 3, 3, 4];
+      const frontNinePars = course.holes.slice(0, 9).map(h => h.par);
+      const backNinePars = course.holes.slice(9, 18).map(h => h.par);
+      expect(frontNinePars).toEqual(expectedPars);
+      expect(backNinePars).toEqual(expectedPars);
+    });
+
+    it('has contiguous hole numbers from 1 to 18', () => {
+      const holeNumbers = course.holes.map(h => h.number);
+      expect(holeNumbers).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
+    });
+
+    it('has coordinate objects defined for every hole (initialized to 0)', () => {
+      course.holes.forEach(hole => {
+        expect(hole.teeLocation).toBeDefined();
+        expect(hole.greenCenter).toBeDefined();
+      });
+    });
+  });
+
   describe('COURSE_DATA backwards compatibility alias', () => {
     it('aliases Cabeza de Caballo holes', () => {
       expect(COURSE_DATA).toHaveLength(18);
@@ -99,3 +133,4 @@ describe('COURSES_DATA integrity', () => {
     });
   });
 });
+
