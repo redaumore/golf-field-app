@@ -270,9 +270,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
                 {/* Controls */}
                 <div className={`grid grid-cols-1 gap-3 ${isReadOnly ? 'opacity-80' : ''}`}>
 
-                    {/* Approach Section */}
+                    {/* Shots Section */}
                     <div className="theme-card-approach rounded-2xl p-3 border-2 space-y-2.5">
-                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide text-xs">Approach</div>
+                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide text-xs">Shots</div>
                         <div className="flex items-center justify-between">
                             <button
                                 onClick={() => onUpdateScore('approach', -1)}
@@ -332,22 +332,29 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                 {score.approachShotsDetails.map((detail, index) => {
                                     const isLastShot = index === score.approachShotsDetails!.length - 1;
                                     const isLostBall = detail.club === 'LostBall';
+                                    const isPutter = detail.club === 'Pt';
                                     const isFirstShotFairway = index === 0 && detail.fairwayHit === true;
 
                                     let badgeStyle = 'theme-btn-approach shadow-sm';
                                     if (isLostBall) {
                                         badgeStyle = 'bg-red-500 text-white border-red-600 shadow-sm';
+                                    } else if (isPutter) {
+                                        badgeStyle = 'theme-accent-green shadow-sm';
                                     } else if (isFirstShotFairway) {
                                         badgeStyle = 'bg-emerald-600 text-white border-emerald-700 shadow-sm';
                                     }
 
+                                    const lastRingClass = isLastShot
+                                        ? isPutter
+                                            ? 'ring-2 ring-offset-1 ring-emerald-400 scale-105'
+                                            : 'ring-2 ring-offset-1 ring-blue-500 scale-105'
+                                        : '';
+
                                     return (
                                         <div
                                             key={index}
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 border-2 transition-transform leading-none ${badgeStyle} ${
-                                                isLastShot ? 'ring-2 ring-offset-1 ring-blue-500 scale-105' : ''
-                                            }`}
-                                            title={isLostBall ? 'Lost Ball' : isFirstShotFairway ? `${detail.club} (Fairway)` : detail.club}
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 border-2 transition-transform leading-none ${badgeStyle} ${lastRingClass}`}
+                                            title={isLostBall ? 'Lost Ball' : isFirstShotFairway ? `${detail.club} (Fairway)` : isPutter ? 'Putter' : detail.club}
                                         >
                                             {isLostBall ? <XCircle size={16} /> : detail.club}
                                         </div>
@@ -364,48 +371,42 @@ export const HoleView: React.FC<HoleViewProps> = ({
                         {!isReadOnly && (
                             <div className="pt-2 border-t theme-border-approach opacity-90">
                                 <div className="grid grid-cols-5 gap-1.5">
-                                    {([...bagClubs, 'LostBall'] as GolfClub[]).map(club => (
-                                        <button
-                                            key={club}
-                                            onClick={() => setSelectedClub(club)}
-                                            className={`py-2.5 px-1 rounded-xl text-base sm:text-lg font-black transition-all border-2 flex items-center justify-center leading-none ${selectedClub === club
-                                                ? club === 'LostBall'
-                                                    ? 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-1 ring-red-200 scale-105'
-                                                    : 'theme-btn-approach ring-2 ring-offset-1 ring-blue-400 scale-105'
-                                                : club === 'LostBall'
-                                                    ? 'bg-red-50 text-red-400 border-red-100 hover:border-red-300'
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200'
-                                                }`}
-                                            title={club === 'LostBall' ? "Lost Ball (Penalty)" : club}
-                                        >
-                                            {club === 'LostBall' ? <XCircle size={20} /> : club}
-                                        </button>
-                                    ))}
+                                    {(bagClubs.includes('Pt') ? [...bagClubs, 'LostBall'] : [...bagClubs, 'Pt', 'LostBall'] as GolfClub[]).map(club => {
+                                        const isLostBall = club === 'LostBall';
+                                        const isPutter = club === 'Pt';
+                                        const isSelected = selectedClub === club;
+
+                                        let buttonClasses = 'bg-white text-gray-600 border-gray-200 hover:border-blue-200';
+                                        if (isSelected) {
+                                            if (isLostBall) {
+                                                buttonClasses = 'bg-red-100 text-red-600 border-red-500 ring-2 ring-offset-1 ring-red-200 scale-105';
+                                            } else if (isPutter) {
+                                                buttonClasses = 'theme-accent-green ring-2 ring-offset-1 ring-emerald-400 scale-105';
+                                            } else {
+                                                buttonClasses = 'theme-btn-approach ring-2 ring-offset-1 ring-blue-400 scale-105';
+                                            }
+                                        } else {
+                                            if (isLostBall) {
+                                                buttonClasses = 'bg-red-50 text-red-400 border-red-100 hover:border-red-300';
+                                            } else if (isPutter) {
+                                                buttonClasses = 'theme-accent-green opacity-80 hover:opacity-100 hover:border-emerald-400';
+                                            }
+                                        }
+
+                                        return (
+                                            <button
+                                                key={club}
+                                                onClick={() => setSelectedClub(club)}
+                                                className={`py-2.5 px-1 rounded-xl text-base sm:text-lg font-black transition-all border-2 flex items-center justify-center leading-none ${buttonClasses}`}
+                                                title={isLostBall ? "Lost Ball (Penalty)" : isPutter ? "Putter" : club}
+                                            >
+                                                {isLostBall ? <XCircle size={20} /> : club}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                    {/* Putting Section */}
-                    <div className="theme-card-putt rounded-2xl p-3 border-2">
-                        <div className="text-center mb-2 font-bold theme-text-putt uppercase tracking-wide text-xs">Putting (Green)</div>
-                        <div className="flex items-center justify-between">
-                            <button
-                                onClick={() => onUpdateScore('putt', -1)}
-                                className="w-12 h-12 flex items-center justify-center theme-btn-putt rounded-full shadow-sm active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
-                                disabled={isReadOnly || score.putts <= 0}
-                            >
-                                -
-                            </button>
-                            <span className="text-4xl font-black theme-text-putt w-16 text-center">{score.putts}</span>
-                            <button
-                                onClick={() => onUpdateScore('putt', 1)}
-                                className="w-12 h-12 flex items-center justify-center theme-btn-putt rounded-full shadow-md active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
-                                disabled={isReadOnly}
-                            >
-                                +
-                            </button>
-                        </div>
                     </div>
 
                     {/* Guests Section */}
@@ -417,6 +418,14 @@ export const HoleView: React.FC<HoleViewProps> = ({
                             {guests.map((guest) => {
                                 const guestHoleScore = guest.scores[hole.number] || { approachShots: 0, putts: 0 };
                                 const guestTotal = guestHoleScore.approachShots + guestHoleScore.putts;
+                                const handleGuestSubtract = () => {
+                                    if (guestHoleScore.putts > 0) {
+                                        onUpdateGuestScore?.(guest.id, 'putt', -1);
+                                    } else if (guestHoleScore.approachShots > 0) {
+                                        onUpdateGuestScore?.(guest.id, 'approach', -1);
+                                    }
+                                };
+
                                 return (
                                     <div key={guest.id} className="theme-card rounded-2xl p-4 border-2 space-y-3">
                                         <div className="flex items-center justify-between">
@@ -429,50 +438,32 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Approach & Putts control */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {/* Guest Approach */}
-                                            <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border theme-border flex flex-col items-center">
-                                                <span className="text-xs font-semibold theme-text-secondary uppercase mb-1">Approach</span>
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'approach', -1)}
-                                                        disabled={isReadOnly || guestHoleScore.approachShots <= 0}
-                                                        className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <span className="text-2xl font-bold w-6 text-center">{guestHoleScore.approachShots}</span>
-                                                    <button
-                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'approach', 1)}
-                                                        disabled={isReadOnly}
-                                                        className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-                                            </div>
+                                        {/* Unified guest score control: subtract, approach, putter */}
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border theme-border flex items-center justify-between gap-2">
+                                            <button
+                                                onClick={handleGuestSubtract}
+                                                disabled={isReadOnly || guestTotal <= 0}
+                                                className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-700 font-black text-xl disabled:opacity-40 active:scale-95 transition-transform flex items-center justify-center shrink-0"
+                                                title="Restar golpe"
+                                            >
+                                                -
+                                            </button>
 
-                                            {/* Guest Putts */}
-                                            <div className="bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-xl border theme-border flex flex-col items-center">
-                                                <span className="text-xs font-semibold theme-text-secondary uppercase mb-1">Putts</span>
-                                                <div className="flex items-center gap-3">
-                                                    <button
-                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'putt', -1)}
-                                                        disabled={isReadOnly || guestHoleScore.putts <= 0}
-                                                        className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <span className="text-2xl font-bold w-6 text-center">{guestHoleScore.putts}</span>
-                                                    <button
-                                                        onClick={() => onUpdateGuestScore?.(guest.id, 'putt', 1)}
-                                                        disabled={isReadOnly}
-                                                        className="w-10 h-10 rounded-full bg-green-600 text-white font-bold text-lg disabled:opacity-40 active:scale-95 transition-transform"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+                                            <div className="flex items-center gap-2 flex-1 justify-end">
+                                                <button
+                                                    onClick={() => onUpdateGuestScore?.(guest.id, 'approach', 1)}
+                                                    disabled={isReadOnly}
+                                                    className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wide disabled:opacity-40 active:scale-95 transition-transform shadow-sm"
+                                                >
+                                                    Approach ({guestHoleScore.approachShots})
+                                                </button>
+                                                <button
+                                                    onClick={() => onUpdateGuestScore?.(guest.id, 'putt', 1)}
+                                                    disabled={isReadOnly}
+                                                    className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wide disabled:opacity-40 active:scale-95 transition-transform shadow-sm"
+                                                >
+                                                    Putter ({guestHoleScore.putts})
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
