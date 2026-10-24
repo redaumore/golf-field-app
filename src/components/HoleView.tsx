@@ -112,8 +112,8 @@ export const HoleView: React.FC<HoleViewProps> = ({
             ? fairwayHit
             : undefined;
 
-        // Special handling for Lost Ball: No geolocation needed
-        if (selectedClub === 'LostBall') {
+        // Special handling for Lost Ball and Putter: No geolocation needed
+        if (selectedClub === 'LostBall' || selectedClub === 'Pt') {
             onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative, fairwayHitValue);
             setSelectedClub(null);
             setIsRepresentative(false);
