@@ -87,6 +87,9 @@ function recentRounds(rounds: Round[], window: number): Round[] {
 
 // ==== WHS (World Handicap System) estimated handicap ====
 
+// Courses excluded from WHS handicap calculation (e.g. 9-hole executive / par-3 courses).
+export const HANDICAP_EXCLUDED_COURSE_IDS = ['4']; // Goodyear Golf Club
+
 // Golf defaults used when course ratings are not stored in the app.
 export const WHS_SLOPE_DEFAULT = 113;
 export const WHS_PCC_DEFAULT = 0;
@@ -196,7 +199,8 @@ export function calculateHandicapBreakdown(
     course?: Hole[],
     options: HandicapCalculationOptions = {}
 ): HandicapBreakdown {
-    const complete = rounds.filter(r => isCompleteRound(r, course));
+    const eligibleRounds = rounds.filter(r => !r.courseId || !HANDICAP_EXCLUDED_COURSE_IDS.includes(r.courseId));
+    const complete = eligibleRounds.filter(r => isCompleteRound(r, course));
     const slopeRating = options.slopeRating ?? WHS_SLOPE_DEFAULT;
     const pcc = options.pcc ?? WHS_PCC_DEFAULT;
     const maxRounds = options.maxRounds ?? WHS_MAX_ROUNDS;

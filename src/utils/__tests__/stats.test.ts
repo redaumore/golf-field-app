@@ -342,6 +342,21 @@ describe('calculateHandicapBreakdown', () => {
     expect(result.rounds.map(r => r.id)).toEqual(['c', 'b', 'a']);
     expect(result.handicap).toBe(6); // best 1 (8) - 2 = 6
   });
+
+  it('excludes rounds played at Goodyear Golf Club (courseId "4")', () => {
+    const goodyearRound = { ...overParRound('gy', new Date('2026-03-15'), 5), courseId: '4' };
+    const rounds = [
+      overParRound('a', new Date('2026-01-01'), 8),
+      overParRound('b', new Date('2026-02-01'), 9),
+      goodyearRound,
+    ];
+    const result = calculateHandicapBreakdown(rounds, COURSE_DATA);
+
+    // Goodyear round is excluded, leaving only 2 eligible rounds -> handicap is null
+    expect(result.rounds.map(r => r.id)).toEqual(['b', 'a']);
+    expect(result.handicap).toBeNull();
+    expect(result.usedCount).toBe(0);
+  });
 });
 
 describe('averageLostBalls (P-06)', () => {
