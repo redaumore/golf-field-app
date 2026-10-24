@@ -347,29 +347,6 @@ function App() {
     setView('play');
   };
 
-  // Update course for a round
-  const handleUpdateRoundCourse = async (roundId: string, courseId: string) => {
-    let updatedRoundToSync: Round | undefined;
-
-    setRounds(prev => prev.map(r => {
-      if (r.id === roundId) {
-        const updated = { ...r, courseId };
-        updatedRoundToSync = updated;
-        return updated;
-      }
-      return r;
-    }));
-
-    if (updatedRoundToSync) {
-      try {
-        await saveRoundToGoogleSheets(updatedRoundToSync);
-        showInfo('Course Updated', 'Course changed and synced to cloud.', 'success');
-      } catch (error) {
-        console.error('Failed to sync updated course to cloud:', error);
-        showInfo('Course Updated Locally', 'Course changed locally, but failed to sync to cloud.', 'info');
-      }
-    }
-  };
 
   // Delete a round
   const handleDeleteRound = async (roundId: string) => {
@@ -675,7 +652,6 @@ function App() {
           onCreateRound={handleCreateRoundRequest}
           onSelectRound={handleSelectRound}
           onDeleteRound={handleDeleteRound}
-          onChangeRoundCourse={handleUpdateRoundCourse}
           isLoading={isLoading}
           onSyncRound={async (roundId) => {
             const round = rounds.find(r => r.id === roundId);
@@ -727,8 +703,6 @@ function App() {
           onBack={() => setView(isCurrentRoundComplete ? 'rounds' : 'play')}
           onEditHole={handleEditHole}
           courseName={currentCourse.course_name}
-          courseId={currentCourse.id}
-          onChangeCourse={currentRoundId ? (newCourseId) => handleUpdateRoundCourse(currentRoundId, newCourseId) : undefined}
           activeHoleNumber={!isCurrentRoundComplete ? currentHole.number : undefined}
         />
       ) : view === 'profile' ? (

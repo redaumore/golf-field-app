@@ -3,7 +3,6 @@ import type { RoundMetadata } from '../types';
 import { Plus, Trash2, Eye, Calendar, Menu, MapPin } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { APP_VERSION } from '../constants/version';
-import { COURSES_DATA } from '../data/course';
 
 interface RoundsManagerProps {
     rounds: RoundMetadata[];
@@ -11,7 +10,6 @@ interface RoundsManagerProps {
     onSelectRound: (roundId: string) => void;
     onDeleteRound: (roundId: string) => void;
     onSyncRound: (roundId: string) => Promise<void>;
-    onChangeRoundCourse?: (roundId: string, courseId: string) => void;
     isLoading?: boolean;
     onMenuClick: () => void;
 }
@@ -22,7 +20,6 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
     onSelectRound,
     onDeleteRound,
     onSyncRound,
-    onChangeRoundCourse,
     isLoading = false,
     onMenuClick,
 }) => {
@@ -122,26 +119,12 @@ export const RoundsManager: React.FC<RoundsManagerProps> = ({
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3 text-sm flex-wrap">
-                                            {onChangeRoundCourse ? (
-                                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                    <MapPin size={12} className="theme-text-tertiary shrink-0" />
-                                                    <select
-                                                        value={round.courseId || '1'}
-                                                        onChange={(e) => onChangeRoundCourse(round.id, e.target.value)}
-                                                        className="font-semibold text-xs px-2 py-0.5 rounded-md theme-bg-tertiary theme-text-secondary border theme-border cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                    >
-                                                        {COURSES_DATA.map(c => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.course_name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            ) : round.courseName ? (
-                                                <span className="font-semibold text-xs px-2 py-0.5 rounded-md theme-bg-tertiary theme-text-secondary border theme-border">
+                                            {round.courseName && (
+                                                <span className="font-semibold text-xs px-2 py-0.5 rounded-md theme-bg-tertiary theme-text-secondary border theme-border flex items-center gap-1">
+                                                    <MapPin size={11} className="theme-text-tertiary shrink-0" />
                                                     {round.courseName}
                                                 </span>
-                                            ) : null}
+                                            )}
                                             <span className="font-bold theme-text-secondary">
                                                 Score: <span className="theme-text-primary">{round.totalScore || '-'}</span>
                                             </span>

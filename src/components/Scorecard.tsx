@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { Hole, HoleScore, GuestPlayer } from '../types';
 import { ArrowLeft, Menu, Users, User, Edit2, MapPin } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
-import { COURSES_DATA } from '../data/course';
 import { calculateRelativeScore, calculateScoreDistribution, getHoleBreakdown } from '../utils/score';
 import { countLostBalls, maxDistanceByClub } from '../utils/stats';
 
@@ -15,8 +14,6 @@ interface ScorecardProps {
     guests?: GuestPlayer[];
     onEditHole?: (holeNumber: number) => void;
     courseName?: string;
-    courseId?: string;
-    onChangeCourse?: (courseId: string) => void;
     activeHoleNumber?: number;
 }
 
@@ -28,8 +25,6 @@ export const Scorecard: React.FC<ScorecardProps> = ({
     guests,
     onEditHole,
     courseName,
-    courseId,
-    onChangeCourse,
     activeHoleNumber,
 }) => {
     const [expandedHole, setExpandedHole] = useState<number | null>(null);
@@ -100,24 +95,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                     </button>
                     <div>
                         <h1 className="text-2xl font-bold">Scorecard</h1>
-                        {onChangeCourse ? (
-                            <div className="flex items-center gap-1 mt-0.5">
-                                <MapPin size={12} className="theme-text-tertiary shrink-0" />
-                                <select
-                                    value={courseId || '1'}
-                                    onChange={(e) => onChangeCourse(e.target.value)}
-                                    className="text-xs font-semibold theme-bg-secondary theme-text-primary border theme-border rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                >
-                                    {COURSES_DATA.map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.course_name} (Par {c.par})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        ) : courseName ? (
-                            <p className="text-xs font-semibold theme-text-secondary">{courseName}</p>
-                        ) : null}
+                        {courseName && (
+                            <p className="text-xs font-semibold theme-text-secondary flex items-center gap-1 mt-0.5">
+                                <MapPin size={11} className="theme-text-tertiary shrink-0" />
+                                {courseName}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <button
