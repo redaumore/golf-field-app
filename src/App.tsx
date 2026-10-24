@@ -512,6 +512,23 @@ function App() {
         }
       } else {
         newScore.putts = Math.max(0, newScore.putts + delta);
+
+        // Record putt in approachShotsDetails if club (e.g. 'Pt') was provided
+        if (delta > 0 && club) {
+          const shotDetail: ShotDetail = {
+            club,
+            timestamp: Date.now(),
+            location: undefined,
+            distance: undefined,
+            isRepresentative,
+            fairwayHit: undefined
+          };
+          newScore.approachShotsDetails = [...(newScore.approachShotsDetails || []), shotDetail];
+        } else if (delta < 0) {
+          const details = [...(newScore.approachShotsDetails || [])];
+          details.pop();
+          newScore.approachShotsDetails = details;
+        }
       }
 
       return {

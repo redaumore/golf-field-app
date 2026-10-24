@@ -2,6 +2,30 @@ import type { Hole, HoleScore, GuestScore, ScoreDistribution } from '../types';
 
 type ScoreRecord = Record<number, HoleScore | GuestScore | { approachShots: number; putts: number }>;
 
+/**
+ * Normalizes approach and putt counts for a hole score.
+ * If details exist and putts === 0 but 'Pt' (putter) shots were recorded in details,
+ * accurately derives the approach and putt counts from the shot details.
+ */
+export const getHoleBreakdown = (score?: HoleScore | GuestScore | { approachShots: number; putts: number; approachShotsDetails?: HoleScore['approachShotsDetails'] }): { approachShots: number; putts: number } => {
+    if (!score) return { approachShots: 0, putts: 0 };
+    const details = 'approachShotsDetails' in score ? score.approachShotsDetails : undefined;
+    if (details && details.length > 0 && score.putts === 0) {
+        const puttsCount = details.filter(s => s.club === 'Pt').length;
+        if (puttsCount > 0) {
+            const approachCount = details.filter(s => s.club !== 'Pt').length;
+            return {
+                approachShots: approachCount,
+                putts: puttsCount,
+            };
+        }
+    }
+    return {
+        approachShots: score.approachShots || 0,
+        putts: score.putts || 0,
+    };
+};
+
 export const calculateRelativeScore = (
     course: Hole[],
     scores: ScoreRecord,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateRelativeScore, calculateScoreDistribution } from '../score';
+import { calculateRelativeScore, calculateScoreDistribution, getHoleBreakdown } from '../score';
 import { COURSE_DATA } from '../../data/course';
 import type { HoleScore } from '../../types';
 
@@ -109,5 +109,43 @@ describe('calculateScoreDistribution', () => {
     const dist = calculateScoreDistribution(COURSE_DATA, scores, 3);
     expect(dist.birdies).toBe(2);
     expect(dist.eaglesOrBetter).toBe(0);
+  });
+});
+
+describe('getHoleBreakdown', () => {
+  it('returns raw counts when putts are already recorded', () => {
+    const score: HoleScore = {
+      holeNumber: 1,
+      approachShots: 2,
+      putts: 2,
+      approachShotsDetails: [
+        { club: 'D', timestamp: 1000 },
+        { club: '7i', timestamp: 2000 },
+        { club: 'Pt', timestamp: 3000 },
+        { club: 'Pt', timestamp: 4000 },
+      ],
+    };
+    expect(getHoleBreakdown(score)).toEqual({ approachShots: 2, putts: 2 });
+  });
+
+  it('normalizes approach and putts when putts === 0 but Pt was recorded in details', () => {
+    const score: HoleScore = {
+      holeNumber: 1,
+      approachShots: 5,
+      putts: 0,
+      approachShotsDetails: [
+        { club: 'D', timestamp: 1000 },
+        { club: '5i', timestamp: 2000 },
+        { club: 'Pw', timestamp: 3000 },
+        { club: 'Pt', timestamp: 4000 },
+        { club: 'Pt', timestamp: 5000 },
+      ],
+    };
+    expect(getHoleBreakdown(score)).toEqual({ approachShots: 3, putts: 2 });
+  });
+
+  it('handles empty or undefined score safely', () => {
+    expect(getHoleBreakdown(undefined)).toEqual({ approachShots: 0, putts: 0 });
+    expect(getHoleBreakdown({ approachShots: 0, putts: 0 })).toEqual({ approachShots: 0, putts: 0 });
   });
 });

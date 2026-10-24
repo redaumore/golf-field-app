@@ -3,7 +3,7 @@ import type { Hole, HoleScore, GuestPlayer } from '../types';
 import { ArrowLeft, Menu, Users, User, Edit2, MapPin } from 'lucide-react';
 import { APP_VERSION } from '../constants/version';
 import { COURSES_DATA } from '../data/course';
-import { calculateRelativeScore, calculateScoreDistribution } from '../utils/score';
+import { calculateRelativeScore, calculateScoreDistribution, getHoleBreakdown } from '../utils/score';
 import { countLostBalls, maxDistanceByClub } from '../utils/stats';
 
 
@@ -348,11 +348,11 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                         const renderSection = (title: string, holes: Hole[], subtotalLabel: string, subtotalPar: number) => {
                             const subtotalApp = holes.reduce((acc, h) => {
                                 const sc = activeScores[h.number];
-                                return acc + (sc ? sc.approachShots : 0);
+                                return acc + getHoleBreakdown(sc).approachShots;
                             }, 0);
                             const subtotalPutts = holes.reduce((acc, h) => {
                                 const sc = activeScores[h.number];
-                                return acc + (sc ? sc.putts : 0);
+                                return acc + getHoleBreakdown(sc).putts;
                             }, 0);
                             const playedCount = holes.filter(h => {
                                 const sc = activeScores[h.number];
@@ -409,6 +409,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                                 </td>
                                                 {holes.map(h => {
                                                     const sc = activeScores[h.number];
+                                                    const breakdown = getHoleBreakdown(sc);
                                                     const hasShots = sc && (sc.approachShots + sc.putts > 0);
                                                     return (
                                                         <td
@@ -416,7 +417,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                                             onClick={() => toggleHole(h.number)}
                                                             className="py-1 px-0 font-medium cursor-pointer"
                                                         >
-                                                            {hasShots ? sc.approachShots : '-'}
+                                                            {hasShots ? breakdown.approachShots : '-'}
                                                         </td>
                                                     );
                                                 })}
@@ -435,6 +436,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                                 </td>
                                                 {holes.map(h => {
                                                     const sc = activeScores[h.number];
+                                                    const breakdown = getHoleBreakdown(sc);
                                                     const hasShots = sc && (sc.approachShots + sc.putts > 0);
                                                     return (
                                                         <td
@@ -442,7 +444,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                                             onClick={() => toggleHole(h.number)}
                                                             className="py-1 px-0 font-medium cursor-pointer"
                                                         >
-                                                            {hasShots ? sc.putts : '-'}
+                                                            {hasShots ? breakdown.putts : '-'}
                                                         </td>
                                                     );
                                                 })}
@@ -530,18 +532,21 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs font-medium theme-text-secondary mt-1">
-                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
-                                            <>
-                                                <span className="flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                                    App: {holeScore.approachShots}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                    Putts: {holeScore.putts}
-                                                </span>
-                                            </>
-                                        ) : (
+                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (() => {
+                                            const breakdown = getHoleBreakdown(holeScore);
+                                            return (
+                                                <>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                        App: {breakdown.approachShots}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Putts: {breakdown.putts}
+                                                    </span>
+                                                </>
+                                            );
+                                        })() : (
                                             <span className="theme-text-tertiary italic">Sin golpes registrados</span>
                                         )}
                                     </div>
@@ -602,9 +607,12 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                     </>
                                 ) : (
                                     <div className="text-xs theme-text-secondary p-2 rounded-lg theme-bg-primary border theme-border">
-                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (
-                                            <span>Golpes registrados: {holeScore.approachShots + holeScore.putts} (App: {holeScore.approachShots}, Putts: {holeScore.putts})</span>
-                                        ) : (
+                                        {holeScore && (holeScore.approachShots + holeScore.putts > 0) ? (() => {
+                                            const breakdown = getHoleBreakdown(holeScore);
+                                            return (
+                                                <span>Golpes registrados: {holeScore.approachShots + holeScore.putts} (App: {breakdown.approachShots}, Putts: {breakdown.putts})</span>
+                                            );
+                                        })() : (
                                             <span className="theme-text-tertiary italic">Sin registrar hoyo {hole.number}</span>
                                         )}
                                     </div>
@@ -621,11 +629,14 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                                         {selectedPlayerId !== 'main' && (
                                             <div className="p-2 rounded-lg theme-bg-primary border theme-border flex items-center justify-between text-xs">
                                                 <span className="font-semibold flex items-center gap-1"><User size={12} /> Jugador Principal</span>
-                                                {mainPlayerScore && (mainPlayerScore.approachShots + mainPlayerScore.putts > 0) ? (
-                                                    <span className="theme-text-secondary font-mono font-bold">
-                                                        {mainPlayerScore.approachShots + mainPlayerScore.putts} golpes (App: {mainPlayerScore.approachShots}, Putts: {mainPlayerScore.putts})
-                                                    </span>
-                                                ) : (
+                                                {mainPlayerScore && (mainPlayerScore.approachShots + mainPlayerScore.putts > 0) ? (() => {
+                                                    const mainBreakdown = getHoleBreakdown(mainPlayerScore);
+                                                    return (
+                                                        <span className="theme-text-secondary font-mono font-bold">
+                                                            {mainPlayerScore.approachShots + mainPlayerScore.putts} golpes (App: {mainBreakdown.approachShots}, Putts: {mainBreakdown.putts})
+                                                        </span>
+                                                    );
+                                                })() : (
                                                     <span className="theme-text-tertiary italic">-</span>
                                                 )}
                                             </div>

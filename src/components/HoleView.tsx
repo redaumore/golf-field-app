@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, MapPin, Flag, Target, CheckCircle, Loader2, 
 import { ConfirmModal } from './ConfirmModal';
 import { APP_VERSION } from '../constants/version';
 import { calculateDistance } from '../utils/geo';
+import { getHoleBreakdown } from '../utils/score';
 
 interface HoleViewProps {
     hole: Hole;
@@ -104,16 +105,43 @@ export const HoleView: React.FC<HoleViewProps> = ({
         );
     };
 
+    const breakdown = getHoleBreakdown(score);
+
+    const handleSubtractShot = () => {
+        const details = score.approachShotsDetails || [];
+        if (details.length > 0) {
+            const lastShot = details[details.length - 1];
+            if (lastShot.club === 'Pt') {
+                onUpdateScore('putt', -1);
+            } else {
+                onUpdateScore('approach', -1);
+            }
+        } else if (score.putts > 0) {
+            onUpdateScore('putt', -1);
+        } else if (score.approachShots > 0) {
+            onUpdateScore('approach', -1);
+        }
+    };
+
     const handleAddApproach = () => {
         if (!selectedClub) return;
 
         // Fairway Hit only applies to the tee shot (first approach) on par 4/5 holes.
-        const fairwayHitValue = score.approachShots === 0 && hole.par >= 4 && selectedClub !== 'LostBall'
+        const fairwayHitValue = totalScore === 0 && hole.par >= 4 && selectedClub !== 'LostBall' && selectedClub !== 'Pt'
             ? fairwayHit
             : undefined;
 
-        // Special handling for Lost Ball and Putter: No geolocation needed
-        if (selectedClub === 'LostBall' || selectedClub === 'Pt') {
+        // Special handling for Putter: increments putts, adds to shot trail, no geolocation needed
+        if (selectedClub === 'Pt') {
+            onUpdateScore('putt', 1, selectedClub, undefined, isRepresentative, undefined);
+            setSelectedClub(null);
+            setIsRepresentative(false);
+            setFairwayHit(false);
+            return;
+        }
+
+        // Special handling for Lost Ball: No geolocation needed
+        if (selectedClub === 'LostBall') {
             onUpdateScore('approach', 1, selectedClub, undefined, isRepresentative, fairwayHitValue);
             setSelectedClub(null);
             setIsRepresentative(false);
@@ -272,18 +300,25 @@ export const HoleView: React.FC<HoleViewProps> = ({
 
                     {/* Shots Section */}
                     <div className="theme-card-approach rounded-2xl p-3 border-2 space-y-2.5">
-                        <div className="text-center font-bold theme-text-approach uppercase tracking-wide text-xs">Shots</div>
+                        <div className="flex items-center justify-between px-1">
+                            <span className="font-bold theme-text-approach uppercase tracking-wide text-xs">Shots</span>
+                            {totalScore > 0 && (
+                                <span className="text-[11px] font-semibold theme-text-secondary">
+                                    App: {breakdown.approachShots} • Putts: {breakdown.putts}
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center justify-between">
                             <button
-                                onClick={() => onUpdateScore('approach', -1)}
+                                onClick={handleSubtractShot}
                                 className="w-12 h-12 flex items-center justify-center theme-btn-approach rounded-full shadow-sm active:scale-95 transition-transform text-2xl font-bold disabled:opacity-50 disabled:active:scale-100"
-                                disabled={isReadOnly || score.approachShots <= 0 || isLocating}
+                                disabled={isReadOnly || totalScore <= 0 || isLocating}
                             >
                                 -
                             </button>
-                            <span className="text-4xl font-black theme-text-approach w-16 text-center">{score.approachShots}</span>
+                            <span className="text-4xl font-black theme-text-approach w-16 text-center">{totalScore}</span>
                             <div className="flex items-center gap-1.5">
-                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && score.approachShots === 0 && hole.par >= 4 && (
+                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && selectedClub !== 'Pt' && totalScore === 0 && hole.par >= 4 && (
                                     <button
                                         onClick={() => setFairwayHit(!fairwayHit)}
                                         className={`flex flex-col items-center justify-center w-10 h-10 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${fairwayHit
@@ -298,7 +333,7 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                         </span>
                                     </button>
                                 )}
-                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && (
+                                {!isReadOnly && selectedClub && selectedClub !== 'LostBall' && selectedClub !== 'Pt' && (
                                     <button
                                         onClick={() => setIsRepresentative(!isRepresentative)}
                                         className={`flex flex-col items-center justify-center w-10 h-10 rounded-xl border-2 shadow-sm transition-all active:scale-95 ${isRepresentative
@@ -361,9 +396,9 @@ export const HoleView: React.FC<HoleViewProps> = ({
                                     );
                                 })}
                             </div>
-                        ) : score.approachShots > 0 ? (
+                        ) : totalScore > 0 ? (
                             <div className="text-center text-[11px] theme-text-approach opacity-60 py-0.5">
-                                {score.approachShots} {score.approachShots === 1 ? 'shot' : 'shots'} recorded
+                                {totalScore} {totalScore === 1 ? 'shot' : 'shots'} recorded
                             </div>
                         ) : null}
 
